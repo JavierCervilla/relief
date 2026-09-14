@@ -88,7 +88,7 @@ const PARES: readonly { frente: string; fondo: string; minimo: number; donde: st
   { frente: "tinta-suave", fondo: "arena", minimo: 4.5, donde: "entradilla y texto secundario" },
   { frente: "petroleo", fondo: "arena", minimo: 4.5, donde: "titulares sobre arena" },
   { frente: "petroleo", fondo: "arena-honda", minimo: 4.5, donde: "titulares en banda honda" },
-  { frente: "petroleo-texto", fondo: "arena", minimo: 4.5, donde: "etiquetas mono (10 px)" },
+  { frente: "petroleo-texto", fondo: "arena", minimo: 4.5, donde: "etiquetas mono (0,75rem = 12 px)" },
   { frente: "petroleo-texto", fondo: "arena-honda", minimo: 4.5, donde: "etiquetas mono en banda" },
   { frente: "accion", fondo: "arena", minimo: 4.5, donde: "enlaces" },
   { frente: "accion", fondo: "arena-honda", minimo: 4.5, donde: "enlaces en banda honda" },

@@ -122,7 +122,7 @@
     "id": "M23",
     "what": "la divulgación del §2 deja de mencionar a los terceros que la página sí nombra",
     "file": "src/i18n/es.ts",
-    "from": "Sí se nombran Claude Code y GitHub, porque sin decir qué herramienta usa el voluntario y dónde vive el código esto no se entiende: no han autorizado nada, no participan y no tienen relación con Relevo.",
+    "from": "Sí se nombran Claude Code y GitHub, porque sin decir qué herramienta usa el voluntario y dónde vive el código esto no se entiende: no han autorizado nada, no participan y no lo respaldan.",
     "to": "Y nadie más aparece aquí."
   },
   {
@@ -136,7 +136,7 @@
     "id": "M25",
     "what": "vuelve el compromiso de plazo: una magnitud en letra sobre la capacidad de Relevo",
     "file": "src/i18n/es.ts",
-    "from": "      \"Contesta una persona, no un formulario. Somos pocos y no hay guardia: puede tardar.",
+    "from": "      \"Contesta una persona, no un formulario. No hay guardia: puede tardar.",
     "to": "      \"Contesta una persona, normalmente en un par de días. Y ya somos cientos."
   },
   {

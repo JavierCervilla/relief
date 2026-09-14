@@ -14,14 +14,22 @@ incomprensible, y decir «no nombro a nadie» nombrándolos es la afirmación de
 entero intenta no cometer. Ahora promete lo que puede sostener (ningún *participante* sin permiso) y
 **declara en el propio §2** quiénes se nombran y que no han autorizado nada.
 
+Esa declaración se quedó corta de precisión y el verificador lo cazó: decía que los terceros
+nombrados «no tienen relación con Relevo», y **GitHub aloja el repositorio que enlaza el pie**.
+Relación hay. Lo que la frase quería decir ya lo dicen sus otras dos cláusulas, que sí son
+verificables, así que la tercera pasa a «**no lo respaldan**» / «they do not endorse it»: el riesgo de
+nombrar a un tercero es insinuar respaldo, y negar el respaldo de forma expresa es la mitigación.
+
 Detrás había una asimetría estructural: `NOMBRES_VETADOS` era una **lista negra** —un oráculo de
 reconocimiento, sólo ve lo que ya está escrito en él— mientras `CIFRAS_DECLARADAS` era una **lista
 blanca**. Dos promesas simétricas defendidas con polaridades opuestas a cien líneas de distancia. El
 invariante nuevo las une: **si un nombre aparece, la divulgación tiene que aparecer también**.
 
 **«Contesta una persona, normalmente en un par de días» era un compromiso de capacidad** publicado dos
-párrafos después de «no hay voluntarios activos». Retirado: ahora dice «somos pocos y no hay guardia:
-puede tardar», que es verdad y sigue siendo útil. Y las magnitudes en letra que sí quedan (las del
+párrafos después de «no hay voluntarios activos». Retirado: ahora dice «no hay guardia: puede
+tardar», que es verdad y sigue siendo útil. El plural («somos pocos») también cayó, en la revisión
+del verificador: la página está escrita en primera persona del singular y el plural infla el equipo —
+la misma familia de afirmación de más que el compromiso de plazo, en versión mucho más leve. Y las magnitudes en letra que sí quedan (las del
 estudio) pasan a estar **declaradas con su motivo**, como los dígitos — un límite documentado que ya
 estaba en uso en producción no es un límite, es una excepción sin declarar.
 
