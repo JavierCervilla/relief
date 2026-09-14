@@ -74,10 +74,30 @@ sostiene el argumento de "uso ordinario".
         literal `Task` con `type: "patch"` y fuente de ONG, o con un opt-in que no vive en el repo
         declarado, **compila**. Las reglas del consentimiento viven en el parse, así que la ingesta tiene
         que pasar por él — que el dato tipe no prueba nada.
+  - [ ] **La URL se valida normalizada y se lee cruda.** `new URL()` normaliza `..` antes del cruce, pero
+        Zod guarda la cadena original y es *ésa* la que se renderiza en «Consentimiento del proyecto».
+        `https://github.com/relevo-demo/docs-es/../../atacante/suyo` casa con `atacante/suyo` y el humano
+        lee el repo bueno. Es el engaño del userinfo hecho con `..`, y lo destapó arreglar el renderizado
+        (S-10). Rechazar toda URL cuya cadena cruda difiera de su `href` normalizado cierra la familia
+        entera, no sólo este caso.
+  - [ ] **U+2028 y U+2029 sobreviven al filtro.** Son separadores de línea y quedan fuera del rango que sí
+        bloquea CR/LF; se guardan crudos y se renderizan (S-11). Misma clase que los invisibles de arriba,
+        dos codepoints más.
   - [ ] **Fijar la política de forja.** `urlCoversRepo` exige host de una lista blanca y que el repo sean
         los dos primeros segmentos de la ruta. La lista actual (GitHub, GitLab, Codeberg, Bitbucket,
         sourcehut) es una decisión de producto disfrazada de constante: revísala con la primera ONG o
-        proyecto que entre, porque un self-hosted legítimo hoy se queda fuera.
+        proyecto que entre, porque un self-hosted legítimo hoy se queda fuera. Dos cosas concretas que
+        arrastra y hay que resolver ahí:
+    - `git.sr.ht` es **entrada muerta**: sus rutas son `/~user/repo` y `RepoSchema` prohíbe la tilde, así
+      que ningún consentimiento de sourcehut podrá validar jamás. Falla cerrado, pero engaña a quien lea
+      la lista (S-12).
+    - **GitLab con subgrupos** no cabe: `RepoSchema` fija exactamente dos segmentos, así que
+      `gitlab.com/grupo/sub/proyecto` sólo se puede declarar como `grupo/sub` — y el cruce lo acepta
+      nombrando el subgrupo en lugar del proyecto.
+  - [ ] **El cruce prueba el repo, no la persona.** Una issue del repo real la abre cualquiera:
+        `optIn.maintainer` y `preApproval.maintainer` siguen siendo cadenas libres, así que el esquema
+        demuestra que la URL vive donde dice y nada más. Ese techo no se levanta sin llamar a la API de la
+        forja, y es la misma llamada que hace falta para verificar que el opt-in **sigue vivo**.
   - [ ] **Cota de longitud.** `content`, `instructions`, `title` y la checklist no tienen máximo. Un
         material de 10 MB es una denegación de contexto en la sesión del voluntario.
 

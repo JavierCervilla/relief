@@ -183,7 +183,7 @@ describe("una URL de consentimiento no puede mentirle a quien la lee", () => {
     ).toBe(true);
   });
 
-  it("el repositorio no admite `..` ni segmentos que empiecen por guion", () => {
+  it("el repositorio no admite `..`, ni segmentos que empiecen por guion, ni `.git`", () => {
     // Se prueba `RepoSchema` SOLO, a propósito. A través de la tarea entera, el cruce opt-in↔repo
     // rechazaba estos valores primero y el test pasaba por un motivo distinto del que anuncia: lo
     // destapó la mutación M40 sobreviviendo con el test en verde.
@@ -208,6 +208,36 @@ describe("una URL de consentimiento no puede mentirle a quien la lee", () => {
         conOptIn("https://github.com/atacante/suyo/blob/main/relevo-demo/docs-es/OPTIN.md"),
       ).success,
     ).toBe(false);
+  });
+
+  it("un host hostil que CONTIENE el nombre de la forja sigue siendo un host hostil", () => {
+    // El bypass canónico de una lista blanca de hosts es debilitar la comparación a un `endsWith`. Hoy
+    // el código usa igualdad exacta y estos dos caen, pero sin este aserto nada lo sujeta ahí: el test
+    // que ya había usa `evil.example`, un host que no contiene ninguna forja, así que pasaría también
+    // con el control debilitado. Lo pidió el `verificador` tras ver sobrevivir la mutación (Z3).
+    for (const host of ["evil.github.com", "github.com.evil.tld"]) {
+      expect(
+        TaskSpecSchema.safeParse(conOptIn(`https://${host}/relevo-demo/docs-es/issues/1`)).success,
+      ).toBe(false);
+    }
+  });
+
+  it("el consentimiento puede vivir en una forja que no sea GitHub", () => {
+    // `FORJAS` es política de producto, no una constante de implementación: si nadie prueba las otras
+    // cinco entradas, encogerla a `{github.com}` no rompe nada y la decisión se pierde en silencio.
+    for (const host of ["codeberg.org", "gitlab.com", "bitbucket.org", "raw.githubusercontent.com"]) {
+      expect(
+        TaskSpecSchema.safeParse(conOptIn(`https://${host}/relevo-demo/docs-es/issues/12`)).success,
+      ).toBe(true);
+    }
+  });
+
+  it("acepta el consentimiento aunque el mantenedor escriba el repo con otras mayúsculas", () => {
+    // Es la mitad «no cierres la puerta» de la regla, y es la que se pierde cuando alguien endurece la
+    // comparación sin saber por qué era laxa: todas las demás fixtures son minúsculas.
+    expect(
+      TaskSpecSchema.safeParse(conOptIn("https://github.com/Relevo-Demo/Docs-ES/issues/12")).success,
+    ).toBe(true);
   });
 
   it("ningún carácter invisible o bidi llega a la URL que se le enseña a una persona", () => {
