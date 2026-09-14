@@ -14,6 +14,7 @@ export type RelevoErrorCode =
   | "no_claim"
   | "session_quota_exceeded"
   | "daily_quota_exceeded"
+  | "patch_quota_exceeded"
   | "result_type_mismatch"
   | "label_not_allowed";
 

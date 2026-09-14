@@ -98,6 +98,16 @@ export class MemoryTaskStore implements TaskStore {
     ).length;
     if (today >= request.maxClaimsPerDay) return { outcome: "daily_quota_exceeded" };
 
+    // El tope de parches se comprueba AQUÍ dentro, con los otros dos, y no en el servicio: si viviera
+    // fuera volvería a abrirse la ventana que RELE-1 cerró, y sería peor — un parche de más no es una
+    // tarea de más, es una tarde de un mantenedor.
+    if (task.type === "patch") {
+      const patches = this.#claimEvents.filter(
+        (event) => event.sessionId === request.sessionId && event.taskType === "patch",
+      ).length;
+      if (patches >= request.maxPatchClaimsPerSession) return { outcome: "patch_quota_exceeded" };
+    }
+
     const claim: Claim = {
       taskId: request.taskId,
       volunteerId: request.volunteerId,
@@ -112,6 +122,7 @@ export class MemoryTaskStore implements TaskStore {
       volunteerId: request.volunteerId,
       sessionId: request.sessionId,
       at: request.claimedAt,
+      taskType: task.type,
     });
     return { outcome: "claimed", claim };
   }
@@ -157,6 +168,12 @@ export class MemoryTaskStore implements TaskStore {
 
   async countClaimsInSession(sessionId: string): Promise<number> {
     return this.#claimEvents.filter((event) => event.sessionId === sessionId).length;
+  }
+
+  async countPatchClaimsInSession(sessionId: string): Promise<number> {
+    return this.#claimEvents.filter(
+      (event) => event.sessionId === sessionId && event.taskType === "patch",
+    ).length;
   }
 
   async countClaimsForVolunteerSince(volunteerId: string, sinceIso: string): Promise<number> {

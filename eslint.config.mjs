@@ -18,7 +18,9 @@ export default [
   {
     // `.claude/` es código VENDORIZADO del framework (los escáneres del Guardián y sus tests): no es
     // nuestro y no se toca, así que tampoco se lintea con nuestras reglas. Su propio repo lo cubre.
-    ignores: ["dist/**", "node_modules/**", "coverage/**", ".claude/**"],
+    // Los `.json` no son código: ESLint los parsea como JS y un objeto suelto le parece una expresión
+    // sin usar. `tsconfig.test.json` fue el primero que lo destapó.
+    ignores: ["dist/**", "node_modules/**", "coverage/**", ".claude/**", "**/*.json"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

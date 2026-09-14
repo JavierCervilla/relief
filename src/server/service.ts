@@ -45,6 +45,21 @@ export interface ServiceOptions {
   now?: () => Date;
 }
 
+/**
+ * La frase que el voluntario pega en el PR o el comentario para avisar de que hay IA detrás.
+ *
+ * La redacta el servidor, no la skill, por la misma razón que los límites de cuota viven aquí: una skill
+ * se edita. Y va literal para que no haya que redactarla bajo presión — la forma que los mantenedores
+ * piden es una frase sencilla, no un formulario.
+ */
+export function disclosureFor(task: Task): string {
+  const base =
+    "Este trabajo se preparó con ayuda de IA generativa (Claude) y lo ha revisado una persona antes de enviarlo, a través de Relevo.";
+  return task.type === "patch"
+    ? `${base} El cambio se hizo sobre una issue que el proyecto marcó como abierta a ayuda de IA.`
+    : base;
+}
+
 /** Medianoche UTC del día de `at`, que es el corte del límite diario. */
 function startOfUtcDay(at: Date): string {
   return new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate())).toISOString();
@@ -104,6 +119,8 @@ export class RelevoService {
         startOfUtcDay(this.#now()),
       ),
       maxClaimsPerDay: LIMITS.maxClaimsPerDay,
+      patchClaimsThisSession: await this.#store.countPatchClaimsInSession(sessionId),
+      maxPatchClaimsPerSession: LIMITS.maxPatchClaimsPerSession,
     };
   }
 
@@ -116,7 +133,8 @@ export class RelevoService {
     const tasks = (await this.#store.listTasks())
       .filter((task) => task.status === "open")
       .filter((task) => input.type === undefined || task.type === input.type)
-      .filter((task) => input.org === undefined || task.org === input.org)
+      .filter((task) => input.org === undefined || task.source.org === input.org)
+      .filter((task) => input.sourceKind === undefined || task.source.kind === input.sourceKind)
       .filter((task) => input.language === undefined || task.language === input.language)
       // Orden estable y sin sorpresas: primero lo que lleva más tiempo esperando.
       .sort((a, b) => (a.createdAt === b.createdAt ? a.id.localeCompare(b.id) : a.createdAt.localeCompare(b.createdAt)))
@@ -125,7 +143,8 @@ export class RelevoService {
         (task): TaskSummary => ({
           id: task.id,
           type: task.type,
-          org: task.org,
+          org: task.source.org,
+          sourceKind: task.source.kind,
           title: task.title,
           estimatedMinutes: task.estimatedMinutes,
           language: task.language,
@@ -148,13 +167,20 @@ export class RelevoService {
       task: {
         id: task.id,
         type: task.type,
-        org: task.org,
+        source: task.source,
         title: task.title,
         instructions: task.instructions,
         language: task.language,
         ...(task.type === "translate" ? { targetLanguage: task.targetLanguage } : {}),
         ...(task.type === "adapt" ? { standard: task.standard } : {}),
         ...(task.type === "classify" ? { question: task.question, labels: task.labels } : {}),
+        ...(task.type === "patch"
+          ? {
+              preApproval: task.preApproval,
+              untrustedReproduction: wrapUntrusted(task.reproduction),
+            }
+          : {}),
+        ...(task.source.kind === "oss" ? { disclosure: disclosureFor(task) } : {}),
         checklist: task.checklist,
         estimatedMinutes: task.estimatedMinutes,
         status: task.status,
@@ -188,6 +214,7 @@ export class RelevoService {
       expiresAt: new Date(now.getTime() + LIMITS.claimTtlMs).toISOString(),
       maxClaimsPerSession: LIMITS.maxClaimsPerSession,
       maxClaimsPerDay: LIMITS.maxClaimsPerDay,
+      maxPatchClaimsPerSession: LIMITS.maxPatchClaimsPerSession,
       dayStartIso: startOfUtcDay(now),
     });
 
@@ -217,6 +244,11 @@ export class RelevoService {
         throw new RelevoError(
           "daily_quota_exceeded",
           `Límite de ${LIMITS.maxClaimsPerDay} tareas al día alcanzado. Vuelve mañana.`,
+        );
+      case "patch_quota_exceeded":
+        throw new RelevoError(
+          "patch_quota_exceeded",
+          `Ya has reclamado un parche en esta sesión, y el límite es ${LIMITS.maxPatchClaimsPerSession}. Revisar un parche le cuesta a un mantenedor mucho más que leer una traducción: el tope existe para que tu ayuda no sea trabajo extra para él. Puedes seguir con tareas de otro tipo.`,
         );
     }
   }

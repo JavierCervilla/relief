@@ -2,17 +2,33 @@
   {
     "id": "kiva-0001",
     "type": "translate",
-    "org": "kiva",
+    "source": {
+      "kind": "ngo",
+      "org": "kiva",
+      "agreement": "carta de colaboración Kiva ↔ Relevo, piloto 2026 (borrador: ninguna ONG ha firmado todavía)"
+    },
     "title": "Perfil de préstamo — cooperativa de café (ES → EN)",
     "instructions": "Traduce el perfil al inglés conservando el sentido y las cifras exactas. No añadas información que no esté en el original ni adjetivos de tu cosecha. Nombres propios y topónimos se dejan tal cual.",
     "language": "es",
     "targetLanguage": "en",
     "content": "Rosa tiene 41 años y vive en una comunidad rural donde cultiva café desde hace catorce años junto a su hermana. Con el préstamo anterior compró una despulpadora manual que redujo a la mitad el tiempo de procesado y le permitió vender grano de mejor calidad a un comprador de la capital. Ahora solicita 1.200 dólares para comprar sacos de yute, renovar el techo del secadero y adelantar el pago de la cosecha a las cuatro mujeres que trabajan con ella en temporada alta. Su objetivo para los próximos dos años es certificar la producción como orgánica.",
     "checklist": [
-      { "id": "c1", "text": "Las cifras (edad, años, importe, número de personas) son idénticas al original." },
-      { "id": "c2", "text": "No se ha añadido información ausente en el original." },
-      { "id": "c3", "text": "El tono es informativo y sobrio, sin florituras ni súplica." },
-      { "id": "c4", "text": "Los nombres propios se conservan sin traducir." }
+      {
+        "id": "c1",
+        "text": "Las cifras (edad, años, importe, número de personas) son idénticas al original."
+      },
+      {
+        "id": "c2",
+        "text": "No se ha añadido información ausente en el original."
+      },
+      {
+        "id": "c3",
+        "text": "El tono es informativo y sobrio, sin florituras ni súplica."
+      },
+      {
+        "id": "c4",
+        "text": "Los nombres propios se conservan sin traducir."
+      }
     ],
     "estimatedMinutes": 12,
     "createdAt": "2026-09-10T08:00:00.000Z"
@@ -20,16 +36,29 @@
   {
     "id": "kiva-0002",
     "type": "translate",
-    "org": "kiva",
+    "source": {
+      "kind": "ngo",
+      "org": "kiva",
+      "agreement": "carta de colaboración Kiva ↔ Relevo, piloto 2026 (borrador: ninguna ONG ha firmado todavía)"
+    },
     "title": "Perfil de préstamo — taller de costura (PT → EN)",
     "instructions": "Traduce el perfil al inglés conservando el sentido y las cifras exactas. No añadas información que no esté en el original. Mantén la moneda y las unidades del original.",
     "language": "pt-BR",
     "targetLanguage": "en",
     "content": "Marcos trabalha com costura há nove anos e divide um pequeno ateliê com outros dois profissionais no centro da cidade. Ele produz uniformes escolares sob encomenda e, na última temporada, atendeu sete escolas da região. Com o empréstimo de 900 dólares pretende comprar uma máquina overloque usada, que hoje precisa alugar por hora, e adquirir tecido no atacado antes do aumento de preço que costuma ocorrer em fevereiro. Marcos calcula que a máquina própria reduz em cerca de um terço o custo de cada peça.",
     "checklist": [
-      { "id": "c1", "text": "Las cifras (años, número de escuelas, importe, fracción de coste) son idénticas al original." },
-      { "id": "c2", "text": "Los términos técnicos de costura se traducen con el término inglés habitual del oficio." },
-      { "id": "c3", "text": "No se ha añadido información ausente en el original." }
+      {
+        "id": "c1",
+        "text": "Las cifras (años, número de escuelas, importe, fracción de coste) son idénticas al original."
+      },
+      {
+        "id": "c2",
+        "text": "Los términos técnicos de costura se traducen con el término inglés habitual del oficio."
+      },
+      {
+        "id": "c3",
+        "text": "No se ha añadido información ausente en el original."
+      }
     ],
     "estimatedMinutes": 10,
     "createdAt": "2026-09-10T09:30:00.000Z"
@@ -37,18 +66,37 @@
   {
     "id": "plena-0001",
     "type": "adapt",
-    "org": "plena-inclusion",
+    "source": {
+      "kind": "ngo",
+      "org": "plena-inclusion",
+      "agreement": "convenio marco Plena Inclusión ↔ Relevo, piloto 2026 (borrador)"
+    },
     "title": "Aviso municipal de empadronamiento a lectura fácil",
     "instructions": "Adapta el texto a lectura fácil siguiendo la norma. Una idea por frase, frases cortas, orden directo, sin subordinadas encadenadas. Explica cada palabra difícil la primera vez que aparezca. No elimines ningún plazo, requisito ni consecuencia: lo que se simplifica es cómo se dice, nunca qué se dice.",
     "language": "es",
     "standard": "UNE 153101:2018 EX",
     "content": "De conformidad con lo establecido en la normativa vigente en materia de padrón municipal, las personas extranjeras no comunitarias sin autorización de residencia permanente están obligadas a renovar su inscripción padronal cada dos años, contados desde la fecha de alta o desde la última renovación efectuada. La no renovación en el plazo indicado determinará la caducidad de la inscripción y su consiguiente baja en el padrón, previa resolución del órgano competente, sin perjuicio de la posibilidad de solicitar una nueva alta con posterioridad aportando la documentación acreditativa correspondiente.",
     "checklist": [
-      { "id": "c1", "text": "Cada frase contiene una sola idea." },
-      { "id": "c2", "text": "Se conserva el plazo de dos años y su punto de inicio." },
-      { "id": "c3", "text": "Se conserva la consecuencia de no renovar (la baja en el padrón)." },
-      { "id": "c4", "text": "Se conserva que se puede volver a darse de alta después." },
-      { "id": "c5", "text": "Palabras como 'padrón' o 'caducidad' se explican la primera vez." }
+      {
+        "id": "c1",
+        "text": "Cada frase contiene una sola idea."
+      },
+      {
+        "id": "c2",
+        "text": "Se conserva el plazo de dos años y su punto de inicio."
+      },
+      {
+        "id": "c3",
+        "text": "Se conserva la consecuencia de no renovar (la baja en el padrón)."
+      },
+      {
+        "id": "c4",
+        "text": "Se conserva que se puede volver a darse de alta después."
+      },
+      {
+        "id": "c5",
+        "text": "Palabras como 'padrón' o 'caducidad' se explican la primera vez."
+      }
     ],
     "estimatedMinutes": 20,
     "createdAt": "2026-09-11T07:15:00.000Z"
@@ -56,18 +104,37 @@
   {
     "id": "plena-0002",
     "type": "adapt",
-    "org": "plena-inclusion",
+    "source": {
+      "kind": "ngo",
+      "org": "plena-inclusion",
+      "agreement": "convenio marco Plena Inclusión ↔ Relevo, piloto 2026 (borrador)"
+    },
     "title": "Prospecto de medicamento — sección de dosificación a lectura fácil",
     "instructions": "Adapta la sección a lectura fácil siguiendo la norma. No cambies ninguna dosis, intervalo ni advertencia: un error aquí es un daño, no un matiz de estilo. Si algo no se puede simplificar sin cambiar su significado, déjalo literal y explícalo aparte.",
     "language": "es",
     "standard": "UNE 153101:2018 EX",
     "content": "La posología habitual en adultos es de un comprimido de 500 mg cada ocho horas, sin superar los tres comprimidos en veinticuatro horas. En pacientes con insuficiencia renal moderada se recomienda espaciar la administración a intervalos de doce horas. No debe administrarse conjuntamente con bebidas alcohólicas ni con otros medicamentos que contengan el mismo principio activo, dado el riesgo de hepatotoxicidad. Si se olvida una dosis, se tomará en cuanto se recuerde, salvo que falten menos de cuatro horas para la siguiente, en cuyo caso se omitirá la dosis olvidada.",
     "checklist": [
-      { "id": "c1", "text": "Las dosis y los intervalos son idénticos al original." },
-      { "id": "c2", "text": "Se conserva el máximo de tres comprimidos en 24 horas." },
-      { "id": "c3", "text": "Se conserva la advertencia sobre el alcohol y sobre el mismo principio activo." },
-      { "id": "c4", "text": "La regla de la dosis olvidada se explica paso a paso." },
-      { "id": "c5", "text": "Cada frase contiene una sola idea." }
+      {
+        "id": "c1",
+        "text": "Las dosis y los intervalos son idénticos al original."
+      },
+      {
+        "id": "c2",
+        "text": "Se conserva el máximo de tres comprimidos en 24 horas."
+      },
+      {
+        "id": "c3",
+        "text": "Se conserva la advertencia sobre el alcohol y sobre el mismo principio activo."
+      },
+      {
+        "id": "c4",
+        "text": "La regla de la dosis olvidada se explica paso a paso."
+      },
+      {
+        "id": "c5",
+        "text": "Cada frase contiene una sola idea."
+      }
     ],
     "estimatedMinutes": 25,
     "createdAt": "2026-09-11T10:40:00.000Z"
@@ -75,16 +142,30 @@
   {
     "id": "cochrane-0001",
     "type": "classify",
-    "org": "cochrane-crowd",
+    "source": {
+      "kind": "ngo",
+      "org": "cochrane-crowd",
+      "agreement": "acuerdo de cribado Cochrane Crowd ↔ Relevo, piloto 2026 (borrador)"
+    },
     "title": "¿Es un ensayo controlado aleatorizado?",
     "instructions": "Lee la descripción del estudio y decide si describe un ensayo controlado aleatorizado (ECA). Un ECA asigna a los participantes a los grupos AL AZAR. Si la asignación es por orden de llegada, por fecha de nacimiento, por criterio del clínico o por preferencia del paciente, NO es aleatorizada. Si la descripción no permite decidirlo, elige 'unclear': adivinar contamina el registro más que abstenerse.",
     "language": "en",
     "question": "¿El estudio descrito es un ensayo controlado aleatorizado?",
-    "labels": ["rct", "not-rct", "unclear"],
+    "labels": [
+      "rct",
+      "not-rct",
+      "unclear"
+    ],
     "content": "We enrolled 248 adults with chronic lower back pain of at least three months' duration. Participants were allocated to either a twelve-week supervised exercise programme or to usual care using a computer-generated sequence with allocation concealment by sealed opaque envelopes. Outcome assessors were blinded to group assignment. The primary outcome was change in the Roland-Morris Disability Questionnaire score at six months. Analysis followed the intention-to-treat principle.",
     "checklist": [
-      { "id": "c1", "text": "La justificación cita la frase concreta del texto que decide la etiqueta." },
-      { "id": "c2", "text": "No se ha usado 'unclear' por pereza: sólo si el texto de verdad no lo dice." }
+      {
+        "id": "c1",
+        "text": "La justificación cita la frase concreta del texto que decide la etiqueta."
+      },
+      {
+        "id": "c2",
+        "text": "No se ha usado 'unclear' por pereza: sólo si el texto de verdad no lo dice."
+      }
     ],
     "estimatedMinutes": 4,
     "createdAt": "2026-09-12T06:00:00.000Z"
@@ -92,18 +173,148 @@
   {
     "id": "cochrane-0002",
     "type": "classify",
-    "org": "cochrane-crowd",
+    "source": {
+      "kind": "ngo",
+      "org": "cochrane-crowd",
+      "agreement": "acuerdo de cribado Cochrane Crowd ↔ Relevo, piloto 2026 (borrador)"
+    },
     "title": "¿Es un ensayo controlado aleatorizado?",
     "instructions": "Lee la descripción del estudio y decide si describe un ensayo controlado aleatorizado (ECA). Un ECA asigna a los participantes a los grupos AL AZAR. Si la asignación es por orden de llegada, por fecha de nacimiento, por criterio del clínico o por preferencia del paciente, NO es aleatorizada. Si la descripción no permite decidirlo, elige 'unclear'.",
     "language": "en",
     "question": "¿El estudio descrito es un ensayo controlado aleatorizado?",
-    "labels": ["rct", "not-rct", "unclear"],
+    "labels": [
+      "rct",
+      "not-rct",
+      "unclear"
+    ],
     "content": "Between January 2023 and March 2024 we compared outcomes in two consecutive cohorts of patients undergoing elective hip replacement at a single centre. Patients operated on in the first period received the standard rehabilitation pathway; those operated on in the second period received an enhanced recovery pathway introduced hospital-wide in July 2023. Baseline characteristics were similar between the groups. Length of stay and readmission at thirty days were compared.",
     "checklist": [
-      { "id": "c1", "text": "La justificación cita la frase concreta del texto que decide la etiqueta." },
-      { "id": "c2", "text": "No se ha usado 'unclear' por pereza: sólo si el texto de verdad no lo dice." }
+      {
+        "id": "c1",
+        "text": "La justificación cita la frase concreta del texto que decide la etiqueta."
+      },
+      {
+        "id": "c2",
+        "text": "No se ha usado 'unclear' por pereza: sólo si el texto de verdad no lo dice."
+      }
     ],
     "estimatedMinutes": 4,
     "createdAt": "2026-09-12T06:05:00.000Z"
+  },
+  {
+    "id": "oss-astro-0001",
+    "type": "translate",
+    "source": {
+      "kind": "oss",
+      "org": "relevo-demo",
+      "repo": "relevo-demo/docs-es",
+      "optIn": {
+        "url": "https://github.com/relevo-demo/docs-es/issues/12",
+        "maintainer": "demo-maintainer",
+        "grantedAt": "2026-09-10T09:00:00.000Z"
+      }
+    },
+    "title": "Traducir la guía de primeros pasos (EN → ES)",
+    "instructions": "Traduce al español conservando el sentido técnico. NO traduzcas nombres de comandos, banderas, rutas ni identificadores de código: van literales y entre acentos graves. Mantén los enlaces tal cual. Si un término técnico no tiene traducción asentada en español, déjalo en inglés la primera vez con la explicación entre paréntesis.",
+    "language": "en",
+    "targetLanguage": "es",
+    "content": "Getting started\n\nInstall the CLI with `npm install -g demotool`. Run `demotool init` in an empty directory to scaffold a project. The `--template` flag selects a starter; pass `--template minimal` if you only want the runtime and no example pages. Configuration lives in `demo.config.ts` at the project root. Every option there can also be set with an environment variable prefixed with `DEMO_`.\n\nIf the init command fails with a permissions error, do not run it with sudo: fix your npm prefix instead, as described in the troubleshooting guide.",
+    "checklist": [
+      {
+        "id": "c1",
+        "text": "Comandos, banderas y rutas siguen literales y entre acentos graves."
+      },
+      {
+        "id": "c2",
+        "text": "Los enlaces no se han tocado."
+      },
+      {
+        "id": "c3",
+        "text": "El aviso de no usar sudo se conserva, y sigue siendo un aviso."
+      },
+      {
+        "id": "c4",
+        "text": "No se ha añadido ni quitado ningún paso."
+      }
+    ],
+    "estimatedMinutes": 15,
+    "createdAt": "2026-09-12T08:00:00.000Z"
+  },
+  {
+    "id": "oss-triage-0001",
+    "type": "classify",
+    "source": {
+      "kind": "oss",
+      "org": "relevo-demo",
+      "repo": "relevo-demo/docs-es",
+      "optIn": {
+        "url": "https://github.com/relevo-demo/docs-es/issues/12",
+        "maintainer": "demo-maintainer",
+        "grantedAt": "2026-09-10T09:00:00.000Z"
+      }
+    },
+    "title": "Triaje: ¿esta issue es un fallo, una petición o una duda?",
+    "instructions": "Lee la issue y elige UNA etiqueta. 'bug' es algo que no funciona como está documentado. 'feature' es algo que nunca existió y se pide. 'question' es alguien que no sabe usarlo y el software funciona. Si la issue mezcla varias cosas, etiqueta la PRINCIPAL y dilo en la justificación. Si de verdad no se puede decidir con lo que hay escrito, elige 'needs-info': pedir datos cuesta menos que etiquetar mal.",
+    "language": "en",
+    "question": "¿Qué es esta issue?",
+    "labels": [
+      "bug",
+      "feature",
+      "question",
+      "needs-info"
+    ],
+    "content": "Title: init always creates the example pages\n\nI ran `demotool init --template minimal` expecting an empty project, but I still get the `pages/` directory with three example files. The docs say minimal gives you 'the runtime and nothing else'. Version 2.4.1, node 22, macOS. Deleting them manually works fine but it's surprising.",
+    "checklist": [
+      {
+        "id": "c1",
+        "text": "La justificación cita la frase concreta de la issue que decide la etiqueta."
+      },
+      {
+        "id": "c2",
+        "text": "No se ha usado 'needs-info' por pereza: sólo si el texto de verdad no basta."
+      }
+    ],
+    "estimatedMinutes": 3,
+    "createdAt": "2026-09-12T08:30:00.000Z"
+  },
+  {
+    "id": "oss-patch-0001",
+    "type": "patch",
+    "source": {
+      "kind": "oss",
+      "org": "relevo-demo",
+      "repo": "relevo-demo/docs-es",
+      "optIn": {
+        "url": "https://github.com/relevo-demo/docs-es/issues/12",
+        "maintainer": "demo-maintainer",
+        "grantedAt": "2026-09-10T09:00:00.000Z"
+      }
+    },
+    "preApproval": {
+      "issueUrl": "https://github.com/relevo-demo/docs-es/issues/48",
+      "maintainer": "demo-maintainer",
+      "approvedAt": "2026-09-12T10:00:00.000Z"
+    },
+    "reproduction": "Con el repo clonado: `npm ci && node bin/demotool.mjs init --template minimal /tmp/x`. Mira `/tmp/x`: aparece `pages/` con tres ficheros. Debería estar vacío salvo la config. El test `test/init.test.mjs` cubre el caso `--template full` y no el mínimo.",
+    "title": "`--template minimal` sigue copiando las páginas de ejemplo",
+    "instructions": "Arregla el fallo descrito en la reproducción. Cambio mínimo: NO reorganices el módulo ni cambies estilo de código que no toques. Añade un test que falle sin tu parche. Ejecuta la reproducción antes y después y anota lo que ves en las dos — eso es lo que se te va a pedir al enviar.",
+    "language": "en",
+    "content": "// bin/scaffold.mjs (extracto)\nexport function filesFor(template) {\n  const base = [\"demo.config.ts\", \"package.json\"];\n  const examples = [\"pages/index.md\", \"pages/about.md\", \"pages/contact.md\"];\n  // TODO: minimal no debería llevar ejemplos\n  if (template === \"full\" || template === \"minimal\") return [...base, ...examples];\n  return base;\n}",
+    "checklist": [
+      {
+        "id": "c1",
+        "text": "El cambio es mínimo y no toca código ajeno al fallo."
+      },
+      {
+        "id": "c2",
+        "text": "Hay un test que falla sin el parche y pasa con él."
+      },
+      {
+        "id": "c3",
+        "text": "`testedHow` dice qué se ejecutó y qué se vio ANTES y DESPUÉS, no 'lo probé'."
+      }
+    ],
+    "estimatedMinutes": 25,
+    "createdAt": "2026-09-12T11:00:00.000Z"
   }
 ]

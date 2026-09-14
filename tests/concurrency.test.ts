@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
 
 import { LIMITS } from "../src/schema/task.js";
 import { RelevoError } from "../src/server/errors.js";
-import { harness, syntheticTasks } from "./helpers.js";
+import { harness, syntheticPatches, syntheticTasks } from "./helpers.js";
 
 const ALL_TASK_IDS = [
   "kiva-0001",
@@ -25,6 +25,17 @@ const ALL_TASK_IDS = [
   "cochrane-0001",
   "cochrane-0002",
 ];
+
+/** El CÓDIGO del error, no su mensaje: comprobar que falla no es comprobar por qué falla. */
+async function codeOf(fn: () => Promise<unknown>): Promise<string> {
+  try {
+    await fn();
+  } catch (error) {
+    if (error instanceof RelevoError) return error.code;
+    throw error;
+  }
+  throw new Error("se esperaba un RelevoError y no se lanzó ninguno");
+}
 
 /** Cuenta cuántas de las promesas cumplieron, y con qué códigos fallaron el resto. */
 function tally(results: PromiseSettledResult<unknown>[]): {
@@ -140,5 +151,99 @@ describe("envío bajo concurrencia", () => {
 
     expect(granted).toBe(1);
     expect(await h.store.listSubmissions()).toHaveLength(1);
+  });
+});
+
+describe("el tope de parches aguanta también en paralelo", () => {
+  it("dos claim_task de parche a la vez: sólo uno entra", async () => {
+    const h = await harness(syntheticPatches(4));
+    const { granted, codes } = tally(
+      await Promise.allSettled([
+        h.service.claimTask({ taskId: "patch-000" }),
+        h.service.claimTask({ taskId: "patch-001" }),
+      ]),
+    );
+    expect(granted).toBe(LIMITS.maxPatchClaimsPerSession);
+    expect(codes).toEqual(["patch_quota_exceeded"]);
+  });
+
+  it("cuatro a la vez tampoco: el tope no se negocia con el paralelismo", async () => {
+    const h = await harness(syntheticPatches(4));
+    const { granted } = tally(
+      await Promise.allSettled(
+        ["patch-000", "patch-001", "patch-002", "patch-003"].map((taskId) =>
+          h.service.claimTask({ taskId }),
+        ),
+      ),
+    );
+    expect(granted).toBe(LIMITS.maxPatchClaimsPerSession);
+    expect(await h.store.listClaims()).toHaveLength(LIMITS.maxPatchClaimsPerSession);
+  });
+
+  it("liberar el parche NO devuelve el cupo: se cuentan claims, como en todo lo demás", async () => {
+    const h = await harness(syntheticPatches(4));
+    await h.service.claimTask({ taskId: "patch-000" });
+    await h.service.releaseTask({ taskId: "patch-000" });
+    expect(await codeOf(() => h.service.claimTask({ taskId: "patch-001" }))).toBe(
+      "patch_quota_exceeded",
+    );
+  });
+
+  it("el tope es PROPIO del parche: tras uno, otras tareas siguen entrando", async () => {
+    // El servidor se lo promete al voluntario por escrito («Puedes seguir con tareas de otro tipo») y
+    // esa frase no tenía un solo test detrás: quitar `&& event.taskType === "patch"` del conteo dejaba
+    // los 80 tests en verde. Lo demostró el verificador con el mutante, no leyendo el código.
+    const h = await harness([...syntheticPatches(2), ...syntheticTasks(3)]);
+    await h.service.claimTask({ taskId: "patch-000" });
+
+    // Un parche más, no. Una tarea de otro tipo, sí — dos, hasta agotar el tope general de 3.
+    expect(await codeOf(() => h.service.claimTask({ taskId: "patch-001" }))).toBe("patch_quota_exceeded");
+    await expect(h.service.claimTask({ taskId: "synth-000" })).resolves.toBeDefined();
+    await expect(h.service.claimTask({ taskId: "synth-001" })).resolves.toBeDefined();
+
+    const { quota } = await h.service.listTasks({ limit: 1 });
+    expect(quota.claimsThisSession).toBe(LIMITS.maxClaimsPerSession);
+  });
+
+  it("una tarea de otro tipo NO consume el cupo del parche (el orden importa)", async () => {
+    // Éste es el que mata al mutante, y el anterior no: si el parche va primero, el contador está a 0
+    // en los dos mundos y no se distingue nada. Hace falta gastar un claim que NO es parche ANTES.
+    const h = await harness([...syntheticPatches(2), ...syntheticTasks(2)]);
+    await h.service.claimTask({ taskId: "synth-000" });
+    await expect(h.service.claimTask({ taskId: "patch-000" })).resolves.toBeDefined();
+  });
+
+  it("y al revés: gastar el tope general no requiere haber tocado ningún parche", async () => {
+    const h = await harness([...syntheticPatches(2), ...syntheticTasks(3)]);
+    for (const id of ["synth-000", "synth-001", "synth-002"]) {
+      await h.service.claimTask({ taskId: id });
+    }
+    // Se acabó por cuota de SESIÓN, no por la de parches: el motivo importa tanto como el rechazo.
+    expect(await codeOf(() => h.service.claimTask({ taskId: "patch-000" }))).toBe(
+      "session_quota_exceeded",
+    );
+  });
+
+  it("el tope de parches SE VE antes de morder, no sólo al rechazar", async () => {
+    // Un límite invisible parece una avería: el voluntario lee «1/3 en esta sesión», elige un parche y
+    // se come un rechazo duro que nada anticipaba.
+    const h = await harness([...syntheticPatches(2), ...syntheticTasks(2)]);
+    const antes = (await h.service.listTasks({ limit: 1 })).quota;
+    expect(antes.patchClaimsThisSession).toBe(0);
+    expect(antes.maxPatchClaimsPerSession).toBe(LIMITS.maxPatchClaimsPerSession);
+
+    await h.service.claimTask({ taskId: "patch-000" });
+    expect((await h.service.listTasks({ limit: 1 })).quota.patchClaimsThisSession).toBe(1);
+
+    // Y una tarea de otro tipo no mueve ese contador.
+    await h.service.claimTask({ taskId: "synth-000" });
+    expect((await h.service.listTasks({ limit: 1 })).quota.patchClaimsThisSession).toBe(1);
+  });
+
+  it("pero una sesión nueva vuelve a tener su parche", async () => {
+    const h = await harness(syntheticPatches(4));
+    await h.as({ sessionId: "s1" }).claimTask({ taskId: "patch-000" });
+    const otra = await h.as({ sessionId: "s2" }).claimTask({ taskId: "patch-001" });
+    expect(otra.alreadyYours).toBe(false);
   });
 });

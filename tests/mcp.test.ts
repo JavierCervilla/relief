@@ -139,11 +139,64 @@ describe("superficie MCP", () => {
     expect(textOf(result)).toContain("reviewedByHuman");
   });
 
+  it("la línea de cuota que lee la persona incluye los parches", async () => {
+    const text = textOf(await client.callTool({ name: "list_tasks", arguments: {} }));
+    expect(text).toMatch(/parches 0\/1/);
+  });
+
   it("cada respuesta trae structuredContent que valida contra su outputSchema", async () => {
     // Si el structuredContent no validara, el propio SDK haría fallar la llamada.
     const list = await client.callTool({ name: "list_tasks", arguments: {} });
     expect(list.structuredContent).toBeDefined();
     const quota = (list.structuredContent as { quota: { maxClaimsPerSession: number } }).quota;
     expect(quota.maxClaimsPerSession).toBe(3);
+  });
+});
+
+describe("el render: la PERSONA tiene que leer lo que el modelo lee", () => {
+  /**
+   * Existe porque no existía. Se añadieron tres campos a la salida de `get_task` sin tocar el
+   * renderizador, y el resultado invertía el diseño entero: el modelo recibía el comando a ejecutar y
+   * la divulgación, y quien firma `reviewedByHuman: true` no veía ninguna de las dos cosas. Lo cazó
+   * `seguridad`, y el motivo de que el gate no lo viera es el de siempre — los asertos estaban contra
+   * la salida del SERVICIO, no contra el texto que alguien lee.
+   */
+  it("una tarea de OSS enseña su consentimiento en el texto, no sólo en el structuredContent", async () => {
+    const text = textOf(
+      await client.callTool({ name: "get_task", arguments: { taskId: "oss-astro-0001" } }),
+    );
+    expect(text).toContain("Consentimiento del proyecto:");
+    expect(text).toContain("https://github.com/relevo-demo/docs-es/issues/12");
+    expect(text).toContain("demo-maintainer");
+  });
+
+  it("un parche enseña la issue pre-aprobada, la reproducción DELIMITADA y quién la escribió", async () => {
+    const text = textOf(
+      await client.callTool({ name: "get_task", arguments: { taskId: "oss-patch-0001" } }),
+    );
+    expect(text).toContain("Issue pre-aprobada para ayuda de IA:");
+    expect(text).toContain("/issues/48");
+    expect(text).toContain("EJECÚTALA Y MIRA EL FALLO");
+    expect(text).toContain("la escribió quien reportó el fallo, no el mantenedor");
+    // Y va dentro de la valla, porque es material que alguien va a ejecutar.
+    expect(text).toContain("INICIO CONTENIDO NO CONFIABLE");
+    expect(text).toContain("npm ci");
+  });
+
+  it("la frase de divulgación se le enseña a la persona, que es quien la tiene que pegar", async () => {
+    const text = textOf(
+      await client.callTool({ name: "get_task", arguments: { taskId: "oss-astro-0001" } }),
+    );
+    expect(text).toContain("Pega esta frase tal cual");
+    expect(text).toContain("IA generativa");
+  });
+
+  it("y una tarea de ONG no enseña nada de eso, porque no le aplica", async () => {
+    const text = textOf(
+      await client.callTool({ name: "get_task", arguments: { taskId: "kiva-0001" } }),
+    );
+    expect(text).not.toContain("Consentimiento del proyecto:");
+    expect(text).not.toContain("Pega esta frase");
+    expect(text).not.toContain("Issue pre-aprobada");
   });
 });

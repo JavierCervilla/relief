@@ -33,6 +33,16 @@ export const LIMITS = {
   maxClaimsPerDay: 10,
   /** Un claim abandonado vuelve a la cola pasado este tiempo. Sin esto, cerrar el portátil bloquea trabajo de una ONG. */
   claimTtlMs: 30 * 60 * 1000,
+  /**
+   * Parches de código reclamables por sesión. **Uno.**
+   *
+   * No es una barandilla moral, es la aritmética del mantenedor: la queja medida en open source es que
+   * «un contribuidor genera diez PRs plausibles en el tiempo que un mantenedor necesita para verificar
+   * una». Una traducción se verifica leyéndola y una etiqueta se contrasta contra el histórico; un
+   * parche exige que alguien entienda el código. Tres parches por sesión es exactamente lo que la
+   * comunidad llama AI-DDoS.
+   */
+  maxPatchClaimsPerSession: 1,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -53,7 +63,142 @@ export const LanguageSchema = z
   .string()
   .regex(/^[a-z]{2}(-[A-Z]{2})?$/, "idioma en formato BCP-47 corto, p. ej. `es` o `pt-BR`");
 
-export const TaskTypeSchema = z.enum(["translate", "adapt", "classify"]);
+/**
+ * URL https, que es como se comprueba un consentimiento: mirándolo.
+ *
+ * Y por eso tiene tres refuerzos más allá de «empieza por https», los tres contra el mismo ataque —
+ * que un humano lea una cosa y el navegador vaya a otra:
+ *   - **Sin userinfo.** `https://github.com@evil.example/issues/1` se lee como GitHub y el host es
+ *     `evil.example`. Contra un verificador humano eso funciona, que es justo el verificador que tenemos.
+ *   - **Sin credenciales embebidas**, por lo mismo y porque no queremos secretos en una fixture.
+ *   - **Sin caracteres de control.** Zod guarda la cadena byte a byte, así que una URL con escapes ANSI
+ *     puede reescribir el terminal de quien la revisa.
+ */
+const HttpsUrl = z
+  .url()
+  .refine((u) => u.startsWith("https://"), "el consentimiento se comprueba en una URL https")
+  .refine(
+    // eslint-disable-next-line no-control-regex -- cazarlos es justamente el punto
+    (u) => !/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]/.test(u),
+    "sin caracteres de control ni invisibles: los escapes ANSI reescriben el terminal y U+202E (RLO) le da la vuelta a lo que se lee",
+  )
+  .refine((u) => {
+    try {
+      const parsed = new URL(u);
+      return parsed.username === "" && parsed.password === "";
+    } catch {
+      return false;
+    }
+  }, "sin userinfo ni credenciales: `https://github.com@evil.example/` se lee como GitHub y no lo es");
+
+/**
+ * `owner/name` de un repositorio.
+ *
+ * Ningún segmento puede empezar por `-` ni ser `.`/`..`. Hoy `repo` sólo se guarda y se muestra, pero el
+ * día que la ingesta haga `git clone` o `gh api` con este valor, un guion inicial es inyección de
+ * argumentos y `..` es un salto de directorio. Se estrecha ahora, que cuesta una regex.
+ */
+export const RepoSchema = z
+  .string()
+  .regex(
+    /^[A-Za-z0-9_.][A-Za-z0-9_.-]*\/[A-Za-z0-9_.][A-Za-z0-9_.-]*$/,
+    "repositorio en formato `owner/name`, sin segmentos que empiecen por `-`",
+  )
+  .refine(
+    (r) =>
+      r
+        .split("/")
+        .every((seg) => seg !== "." && seg !== ".." && seg !== ".git" && !seg.endsWith(".git")),
+    "ningún segmento del repositorio puede ser `.`, `..` ni `.git`, ni acabar en `.git`",
+  );
+
+/**
+ * Forjas donde puede vivir un consentimiento. Lista blanca a propósito: sin fijar el host, cualquiera
+ * publica `https://evil.example/torvalds/linux/optin` y el cruce lo da por bueno.
+ */
+const FORJAS = new Set([
+  "github.com",
+  "raw.githubusercontent.com",
+  "gitlab.com",
+  "codeberg.org",
+  "bitbucket.org",
+  "git.sr.ht",
+]);
+
+/**
+ * ¿La URL del consentimiento vive de verdad en el repo que dice autorizar?
+ *
+ * Dos condiciones, y las dos hacen falta: el host es una forja conocida, y el repo son los **dos
+ * primeros** segmentos de la ruta. Comparar sólo `pathname` en cualquier posición dejaba pasar
+ * `https://evil.example/torvalds/linux/optin` y también
+ * `https://github.com/atacante/suyo/blob/main/relevo-demo/docs-es/OPTIN.md`, o sea un fichero en el repo
+ * del atacante. Lo encontró `seguridad` en la segunda pasada, y su lectura es la que importa: el mensaje
+ * del `refine` prometía más de lo que entregaba.
+ */
+function urlCoversRepo(url: string, repo: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (!FORJAS.has(parsed.hostname)) return false;
+    const segments = parsed.pathname.split("/").filter((seg) => seg !== "");
+    const [owner, name] = repo.split("/");
+    // Sin distinguir mayúsculas: las forjas no lo hacen, y un mantenedor que pegue
+    // `github.com/relevo-demo/Docs-ES` tiene un enlace legítimo que nos quedaríamos fuera. En un piloto
+    // eso no es rigor, es una puerta cerrada en la cara de quien nos está haciendo un favor.
+    const igual = (a: string | undefined, b: string | undefined): boolean =>
+      a !== undefined && b !== undefined && a.toLowerCase() === b.toLowerCase();
+    return igual(segments[0], owner) && igual(segments[1], name);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * De dónde sale la tarea y con qué permiso. **Obligatorio en toda tarea.**
+ *
+ * Es un campo del esquema y no una política documentada a propósito: una tarea sin procedencia no se
+ * puede construir, así que tampoco se puede colar por una ingesta futura ni por un fixture escrito con
+ * prisa. Lo que depende de que alguien se acuerde no se sostiene.
+ *
+ * Los dos niveles de consentimiento (ver `design_via_oss.md` §1):
+ *   - **Nivel 1**, aquí: el proyecto o la ONG autorizan que Relevo saque tareas suyas. Hace falta para
+ *     TODO.
+ *   - **Nivel 2**, en `PatchTaskSchema.preApproval`: esta issue concreta admite ayuda de IA. Hace falta
+ *     sólo para código.
+ */
+export const TaskSourceSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("ngo"),
+    /** Identificador corto: `kiva`, `plena-inclusion`, `cochrane-crowd`… */
+    org: NonEmpty,
+    /**
+     * Referencia del acuerdo con la ONG. Con una organización el consentimiento es una relación, no un
+     * enlace público — pero tiene que poder nombrarse, porque «teníamos un acuerdo» no es un acuerdo.
+     */
+    agreement: NonEmpty,
+  }),
+  z.object({
+    kind: z.literal("oss"),
+    /** Organización o persona propietaria: `nodejs`, `astral-sh`… */
+    org: NonEmpty,
+    repo: RepoSchema,
+    /**
+     * Nivel 1. El mantenedor dijo que sí, y dónde consta. Un backlog público **no** es consentimiento:
+     * una etiqueta `help wanted` pide ayuda humana, no una cola de IA, y asumir lo contrario es
+     * exactamente la presunción que ha quemado a la comunidad.
+     */
+    optIn: z.object({
+      url: HttpsUrl.describe("Issue o fichero del repo donde el mantenedor lo autoriza."),
+      maintainer: NonEmpty,
+      grantedAt: Timestamp,
+    }),
+  }).refine(
+    (src) => urlCoversRepo(src.optIn.url, src.repo),
+    "el opt-in tiene que vivir en el repo que autoriza: una URL que no lo nombra es justo la comprobación que un humano no hace",
+  ),
+]);
+export type TaskSource = z.infer<typeof TaskSourceSchema>;
+
+export const TaskTypeSchema = z.enum(["translate", "adapt", "classify", "patch"]);
 export type TaskType = z.infer<typeof TaskTypeSchema>;
 
 /**
@@ -97,10 +242,10 @@ export const ChecklistItemSchema = z.object({
 
 const TaskBase = {
   id: TaskIdSchema,
-  /** Organización que publica la tarea (`kiva`, `plena-inclusion`, `cochrane-crowd`…). */
-  org: NonEmpty,
+  /** De dónde sale y con qué permiso. Sin esto la tarea no existe. */
+  source: TaskSourceSchema,
   title: NonEmpty,
-  /** Lo que la ONG quiere que se haga. Esto sí es instrucción, y viene de la ONG, no del contenido. */
+  /** Lo que pide quien publica la tarea. Esto sí es instrucción, y viene de la fuente, no del contenido. */
   instructions: NonEmpty,
   content: UntrustedTextSchema,
   /** Idioma del material (`content`). En `translate` es el de partida. */
@@ -139,14 +284,66 @@ export const ClassifyTaskSchema = z.object({
   labels: z.array(NonEmpty).min(2).describe("Conjunto cerrado de etiquetas admisibles."),
 });
 
-export const TaskSpecSchema = z.discriminatedUnion("type", [
-  TranslateTaskSchema,
-  AdaptTaskSchema,
-  ClassifyTaskSchema,
-]);
+/**
+ * Un cambio de código sobre una issue que el mantenedor ha **pre-aprobado** para ayuda de IA.
+ *
+ * Es el único tipo que puede hacer daño al proyecto que dice ayudar, y por eso es el único con un
+ * segundo nivel de consentimiento. La forma no es nuestra: es la política que Ghostty publicó en enero
+ * de 2026 —contribuciones con IA restringidas a issues pre-aprobadas— escrita como tipo en vez de como
+ * norma, para que un parche sin permiso sea **inexpresable** y no sólo desaconsejado.
+ */
+export const PatchTaskSchema = z.object({
+  ...TaskBase,
+  type: z.literal("patch"),
+  /** Nivel 2 del consentimiento. Sin esto, la tarea no se puede construir. */
+  preApproval: z.object({
+    issueUrl: HttpsUrl.describe("La issue que el mantenedor marcó como abierta a ayuda de IA."),
+    maintainer: NonEmpty,
+    approvedAt: Timestamp,
+  }),
+  /**
+   * Cómo reproducir el fallo: lo que el voluntario tiene que ver fallar antes de tocar nada.
+   *
+   * **Es contenido NO confiable**, aunque venga de una issue pre-aprobada. La pre-aprobación autoriza
+   * que esa issue admita ayuda de IA; no autentica quién escribió su cuerpo, y los pasos de
+   * reproducción los escribe quien reporta el fallo, que es cualquiera. Además es el único campo que le
+   * dice a una persona que **ejecute** algo, así que sale delimitado como el resto del material.
+   */
+  reproduction: UntrustedTextSchema,
+});
+
+export const TaskSpecSchema = z
+  .discriminatedUnion("type", [
+    TranslateTaskSchema,
+    AdaptTaskSchema,
+    ClassifyTaskSchema,
+    PatchTaskSchema,
+  ])
+  .refine(
+    (task) => task.type !== "patch" || task.source.kind === "oss",
+    "un `patch` sólo puede venir de una fuente `oss`: el nivel 2 del consentimiento no existe fuera de un repo",
+  )
+  .refine(
+    (task) =>
+      task.type !== "patch" ||
+      task.source.kind !== "oss" ||
+      urlCoversRepo(task.preApproval.issueUrl, task.source.repo),
+    "la issue pre-aprobada tiene que vivir en el repo que la tarea declara: si no, la frase de divulgación afirma algo que el esquema no respalda",
+  );
 export type TaskSpec = z.infer<typeof TaskSpecSchema>;
 
-/** Una tarea tal y como la guarda el store: su especificación más el estado del ciclo de vida. */
+/**
+ * Una tarea tal y como la guarda el store: su especificación más el estado del ciclo de vida.
+ *
+ * **Ojo al construir una `Task` a mano.** `z.infer` NO lleva los `.refine`, así que un literal con
+ * `type: "patch"` y `source.kind: "ngo"`, o con un opt-in que no vive en el repo declarado, **compila
+ * con `tsc --strict`**. Las reglas viven en `TaskSpecSchema.parse`, no en el tipo.
+ *
+ * Hoy no hay hueco alcanzable: `loadTasks` es la única entrada de producción y parsea. Pero el día que
+ * entre la ingesta, **tiene que parsear con `TaskSpecSchema`** — no basta con que el dato tipe. Está
+ * anotado como sub-casilla de la ingesta en el ROADMAP, y va escrito aquí porque éste es el fichero que
+ * alguien abre justo antes de cometer el error.
+ */
 export const TaskSchema = z.intersection(TaskSpecSchema, z.object({ status: TaskStatusSchema }));
 export type Task = z.infer<typeof TaskSchema>;
 
@@ -182,6 +379,23 @@ export const AdaptResultSchema = z.object({
 });
 
 /**
+ * Resultado de un `patch`: el diff, qué hace y **cómo lo has probado**.
+ *
+ * `testedHow` es la pieza que más importa de todo este tipo, y la más barata. La queja número uno de los
+ * mantenedores no es que el parche venga de una IA: es que *el autor no reprodujo el fallo ni entendió
+ * el parche*, y entonces el mantenedor acaba siendo el operador no pagado de la herramienta de otro.
+ * Exigirlo en el esquema convierte esa queja en un campo que no se puede dejar vacío.
+ */
+export const PatchResultSchema = z.object({
+  type: z.literal("patch"),
+  diff: NonEmpty.describe("El cambio, en formato diff unificado."),
+  rationale: NonEmpty.describe("Qué hace el cambio y por qué, en una o dos frases."),
+  testedHow: NonEmpty.describe(
+    "Cómo has comprobado que arregla el fallo: qué ejecutaste y qué viste, antes y después.",
+  ),
+});
+
+/**
  * Resultado de una `classify`: la etiqueta y **por qué**.
  *
  * La justificación no es decoración: es lo que permite a la ONG revisar un desacuerdo con el gold set en
@@ -197,6 +411,7 @@ export const ResultSchema = z.discriminatedUnion("type", [
   TranslateResultSchema,
   AdaptResultSchema,
   ClassifyResultSchema,
+  PatchResultSchema,
 ]);
 export type Result = z.infer<typeof ResultSchema>;
 
@@ -222,6 +437,11 @@ export type Submission = z.infer<typeof SubmissionSchema>;
 /** `list_tasks` — mira la cola. No reserva nada. */
 export const ListTasksInputSchema = z.object({
   type: TaskTypeSchema.optional().describe("Filtra por tipo de tarea."),
+  /**
+   * Filtra por vía. Existe porque con dos vías abiertas «clasificar» puede ser triar issues de un repo
+   * o cribar estudios clínicos, y no es lo mismo para quien elige en qué gasta su rato.
+   */
+  sourceKind: z.enum(["ngo", "oss"]).optional().describe("Filtra por vía: ONG u open source."),
   org: NonEmpty.optional().describe("Filtra por organización."),
   language: LanguageSchema.optional().describe("Filtra por el idioma del material."),
   limit: z.number().int().min(1).max(50).default(10),
@@ -236,6 +456,8 @@ export const TaskSummarySchema = z.object({
   id: TaskIdSchema,
   type: TaskTypeSchema,
   org: NonEmpty,
+  /** `ngo` u `oss`. Elegir tarea es también elegir a quién ayudas, así que se ve antes de abrirla. */
+  sourceKind: z.enum(["ngo", "oss"]),
   title: NonEmpty,
   estimatedMinutes: z.number().int().positive(),
   language: LanguageSchema.describe("Idioma de partida del material."),
@@ -248,6 +470,13 @@ export const QuotaSchema = z.object({
   maxClaimsPerSession: z.number().int().positive(),
   claimsToday: z.number().int().nonnegative(),
   maxClaimsPerDay: z.number().int().positive(),
+  /**
+   * Parches de esta sesión. Va aquí por lo mismo que los otros dos contadores: un tope que sólo se ve
+   * cuando muerde hace que el voluntario lea «1/3 en esta sesión», elija un parche y se coma un
+   * rechazo duro. Un límite invisible parece una avería.
+   */
+  patchClaimsThisSession: z.number().int().nonnegative(),
+  maxPatchClaimsPerSession: z.number().int().positive(),
 });
 export type Quota = z.infer<typeof QuotaSchema>;
 
@@ -295,7 +524,7 @@ export const GetTaskOutputSchema = z.object({
   task: z.object({
     id: TaskIdSchema,
     type: TaskTypeSchema,
-    org: NonEmpty,
+    source: TaskSourceSchema,
     title: NonEmpty,
     instructions: NonEmpty,
     language: LanguageSchema,
@@ -303,6 +532,18 @@ export const GetTaskOutputSchema = z.object({
     standard: NonEmpty.optional(),
     question: NonEmpty.optional(),
     labels: z.array(NonEmpty).optional(),
+    preApproval: z
+      .object({ issueUrl: HttpsUrl, maintainer: NonEmpty, approvedAt: Timestamp })
+      .optional(),
+    /** La reproducción, delimitada. Ver `src/server/untrusted.ts`: es un comando que alguien ejecutará. */
+    untrustedReproduction: z.string().optional(),
+    /**
+     * La frase de divulgación, ya redactada, para pegar tal cual en el PR o el comentario.
+     *
+     * Va aquí y no en la skill porque una skill se edita. Los mantenedores piden que se avise de que
+     * hay IA detrás; dárselo escrito quita la única excusa para no hacerlo.
+     */
+    disclosure: NonEmpty.optional(),
     checklist: z.array(ChecklistItemSchema),
     estimatedMinutes: z.number().int().positive(),
     status: TaskStatusSchema,

@@ -24,7 +24,11 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
-      - name: Typecheck
+      - name: Typecheck (src Y tests)
+        # `tests/` no lo miraba NADIE: el tsconfig sólo incluía `src/`, ESLint no es type-aware y vitest
+        # borra los tipos al transpilar. Con esa ceguera, un `expect(task.source.loQueSea).toBeUndefined()`
+        # pasaría en silencio para siempre — la clase «aserto que ya era verdad» que este repo ya pagó
+        # dos veces. Lo cazó el verificador, y con una instancia real ya dentro.
         run: npm run typecheck
       - name: Lint (gate anti-slop, ratchet subido a error)
         run: npm run lint
@@ -48,7 +52,9 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
-      - name: Batería de mutaciones
+      - name: Batería de mutaciones (con su propio self-test delante)
+        # El self-test va primero por lo mismo que en `gate-lint`: la guarda que impide que la batería
+        # cuente «suite en rojo» como «mutación cazada» es ella misma borrable sin que nada se entere.
         run: npm run mutate
 
   gates-honestos:

@@ -32,7 +32,7 @@
  * servidor: el commit que la haga real es el que tiene que meterla aquí dentro.
  */
 
-import type { Claim, Result, Submission, Task, TaskStatus } from "../schema/task.js";
+import type { Claim, Result, Submission, Task, TaskStatus, TaskType } from "../schema/task.js";
 
 /**
  * Un claim ocurrido. Es un registro **append-only** y separado de los claims vivos: liberar una tarea
@@ -44,6 +44,8 @@ export interface ClaimEvent {
   volunteerId: string;
   sessionId: string;
   at: string;
+  /** El tipo importa para la cuota: un `patch` tiene su propio tope, más bajo. */
+  taskType: TaskType;
 }
 
 /** Todo lo que hace falta para decidir un claim, para que el store no tenga que consultar nada fuera. */
@@ -55,6 +57,8 @@ export interface ClaimRequest {
   expiresAt: string;
   maxClaimsPerSession: number;
   maxClaimsPerDay: number;
+  /** Tope propio de parches por sesión. Ver `LIMITS.maxPatchClaimsPerSession`. */
+  maxPatchClaimsPerSession: number;
   /** Medianoche UTC del día de `claimedAt`: el corte del contador diario. */
   dayStartIso: string;
 }
@@ -66,7 +70,8 @@ export type ClaimResult =
   | { outcome: "task_not_found" }
   | { outcome: "task_not_available"; status: TaskStatus }
   | { outcome: "session_quota_exceeded" }
-  | { outcome: "daily_quota_exceeded" };
+  | { outcome: "daily_quota_exceeded" }
+  | { outcome: "patch_quota_exceeded" };
 
 /** Lo que hace falta para registrar un envío. La validación del resultado ya la hizo el servicio. */
 export interface SubmitRequest {
@@ -105,6 +110,8 @@ export interface TaskStore {
   tryRelease(taskId: string, volunteerId: string): Promise<ReleaseResult>;
 
   countClaimsInSession(sessionId: string): Promise<number>;
+  /** Sólo los parches: tienen su propio tope y por tanto su propio contador visible. */
+  countPatchClaimsInSession(sessionId: string): Promise<number>;
   /** Claims de este voluntario a partir de `sinceIso` (inclusive). */
   countClaimsForVolunteerSince(volunteerId: string, sinceIso: string): Promise<number>;
 

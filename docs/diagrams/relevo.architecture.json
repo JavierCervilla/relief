@@ -3,44 +3,262 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "Relevo — voluntariado asistido por IA",
-    "subtitle": "La inferencia ocurre en la sesión del voluntario; Relevo nunca ve una credencial de modelo",
+    "subtitle": "Dos vias con consentimiento registrado; la inferencia ocurre en la sesion del voluntario",
     "quality_profile": "showcase",
-    "viewBox": [1000, 640],
+    "viewBox": [
+      1000,
+      640
+    ],
     "views": [
       {
         "id": "camino-tarea",
         "label": "Camino de una tarea",
-        "focus": ["ong", "relevo", "cola", "claude-code", "voluntario"],
-        "note": "La ONG publica, el voluntario elige y reclama, trabaja en su sesión y envía."
+        "focus": [
+          "ong",
+          "oss",
+          "relevo",
+          "cola",
+          "claude-code",
+          "voluntario"
+        ],
+        "note": "Quien publica da su consentimiento, el voluntario elige y reclama, trabaja en su sesion y envia."
       },
       {
         "id": "frontera-inferencia",
-        "label": "Dónde ocurre la inferencia",
-        "focus": ["voluntario", "claude-code", "modelo", "relevo"],
-        "note": "No hay arista de Relevo al modelo. Esa ausencia es el diseño, no un olvido."
+        "label": "Donde ocurre la inferencia",
+        "focus": [
+          "voluntario",
+          "claude-code",
+          "modelo",
+          "relevo"
+        ],
+        "note": "No hay arista de Relevo al modelo. Esa ausencia es el diseno, no un olvido."
+      },
+      {
+        "id": "consentimiento",
+        "label": "Los dos niveles de consentimiento",
+        "focus": [
+          "oss",
+          "relevo",
+          "cola"
+        ],
+        "note": "Opt-in del proyecto para todo; pre-aprobacion por issue para codigo. Exigidos por el esquema."
       }
     ]
   },
   "components": [
-    { "id": "ong", "type": "external", "label": "ONG", "sublabel": "Publica y revisa", "pos": [500, 110], "size": [150, 60] },
-    { "id": "goldset", "type": "database", "label": "Gold set", "sublabel": "Respuestas de referencia", "pos": [730, 110], "size": [150, 60] },
-    { "id": "voluntario", "type": "external", "label": "Voluntario", "sublabel": "Elige y revisa", "pos": [40, 300], "size": [150, 60] },
-    { "id": "claude-code", "type": "frontend", "label": "Claude Code", "sublabel": "Sesion del voluntario", "brand": "claude", "pos": [270, 300], "size": [150, 60] },
-    { "id": "relevo", "type": "backend", "label": "Relevo MCP", "sublabel": "Las cinco tools", "pos": [500, 300], "size": [150, 60] },
-    { "id": "cola", "type": "database", "label": "Cola de tareas", "sublabel": "Claims y envios", "pos": [730, 300], "size": [150, 60] },
-    { "id": "modelo", "type": "external", "label": "Modelo", "sublabel": "Cuota del voluntario", "pos": [270, 490], "size": [150, 60] }
+    {
+      "id": "ong",
+      "type": "external",
+      "label": "ONG",
+      "sublabel": "Acuerdo nombrado",
+      "pos": [
+        410,
+        110
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "oss",
+      "type": "external",
+      "label": "Proyecto OSS",
+      "sublabel": "Opt-in con URL",
+      "pos": [
+        640,
+        110
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "goldset",
+      "type": "database",
+      "label": "Gold set",
+      "sublabel": "Etiquetas de referencia",
+      "pos": [
+        730,
+        490
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "voluntario",
+      "type": "external",
+      "label": "Voluntario",
+      "sublabel": "Elige y revisa",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "claude-code",
+      "type": "frontend",
+      "label": "Claude Code",
+      "sublabel": "Sesion del voluntario",
+      "brand": "claude",
+      "pos": [
+        270,
+        300
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "relevo",
+      "type": "backend",
+      "label": "Relevo MCP",
+      "sublabel": "Las cinco tools",
+      "pos": [
+        500,
+        300
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "cola",
+      "type": "database",
+      "label": "Cola de tareas",
+      "sublabel": "Claims y envios",
+      "pos": [
+        730,
+        300
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "modelo",
+      "type": "external",
+      "label": "Modelo",
+      "sublabel": "Cuota del voluntario",
+      "pos": [
+        270,
+        490
+      ],
+      "size": [
+        150,
+        60
+      ]
+    }
   ],
   "boundaries": [
-    { "kind": "security-group", "label": "Maquina del voluntario", "wraps": ["voluntario", "claude-code"] },
-    { "kind": "region", "label": "Relevo", "wraps": ["relevo", "cola"] }
+    {
+      "kind": "security-group",
+      "label": "Maquina del voluntario",
+      "wraps": [
+        "voluntario",
+        "claude-code"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Relevo",
+      "wraps": [
+        "relevo",
+        "cola"
+      ]
+    }
   ],
   "connections": [
-    { "id": "voluntario-claude", "from": "voluntario", "to": "claude-code", "label": "elige", "variant": "emphasis" },
-    { "id": "claude-relevo", "from": "claude-code", "to": "relevo", "label": "MCP" },
-    { "id": "relevo-cola", "from": "relevo", "to": "cola", "label": "claims" },
-    { "id": "ong-relevo", "from": "ong", "to": "relevo", "label": "publica", "labelDy": 24 },
-    { "id": "goldset-cola", "from": "goldset", "to": "cola", "label": "compara", "variant": "dashed", "labelDy": 24 },
-    { "id": "claude-modelo", "from": "claude-code", "to": "modelo", "label": "inferencia", "variant": "emphasis", "labelDy": 24 }
+    {
+      "id": "voluntario-claude",
+      "from": "voluntario",
+      "to": "claude-code",
+      "label": "elige",
+      "variant": "emphasis"
+    },
+    {
+      "id": "claude-relevo",
+      "from": "claude-code",
+      "to": "relevo",
+      "label": "MCP"
+    },
+    {
+      "id": "relevo-cola",
+      "from": "relevo",
+      "to": "cola",
+      "label": "claims"
+    },
+    {
+      "id": "ong-relevo",
+      "from": "ong",
+      "to": "relevo",
+      "label": "acuerdo",
+      "labelDy": 24,
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          485,
+          215
+        ],
+        [
+          575,
+          215
+        ]
+      ],
+      "labelAt": [
+        430,
+        205
+      ]
+    },
+    {
+      "id": "oss-relevo",
+      "from": "oss",
+      "to": "relevo",
+      "label": "opt-in",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "via": [
+        [
+          715,
+          330
+        ]
+      ],
+      "labelAt": [
+        700,
+        250
+      ]
+    },
+    {
+      "id": "goldset-cola",
+      "from": "goldset",
+      "to": "cola",
+      "label": "compara",
+      "variant": "dashed",
+      "labelAt": [
+        812,
+        420
+      ]
+    },
+    {
+      "id": "claude-modelo",
+      "from": "claude-code",
+      "to": "modelo",
+      "label": "inferencia",
+      "variant": "emphasis",
+      "labelDy": 24
+    }
   ],
   "cards": [
     {
@@ -54,11 +272,20 @@
     },
     {
       "dot": "amber",
-      "title": "Los limites viven en el servidor",
+      "title": "El consentimiento es del esquema",
       "items": [
-        "Tres tareas por sesion, diez al dia",
-        "El claim caduca a los treinta minutos",
-        "Una skill se edita; un invariante testeado no"
+        "Nivel 1: opt-in del proyecto o acuerdo de la ONG",
+        "Nivel 2: la issue admite ayuda de IA (solo codigo)",
+        "Sin procedencia, la tarea no se puede construir"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "La aritmetica del mantenedor",
+      "items": [
+        "Un parche por sesion; tres tareas en total",
+        "testedHow: que ejecutaste y que viste",
+        "El PR lo abre la persona, nunca Relevo"
       ]
     }
   ]
