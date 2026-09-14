@@ -1,0 +1,43 @@
+{
+  "name": "relevo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cola de micro-tareas de ONGs que un voluntario consume desde su propia sesión de Claude Code. Relevo nunca toca credenciales de modelo.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "relevo-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "gate": "npm run typecheck && npm run lint && npm test && npm run mutate",
+    "mutate": "node scripts/mutate.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.0.0",
+    "@types/node": "^22.10.0",
+    "@typescript-eslint/eslint-plugin": "^8.70.0",
+    "@typescript-eslint/parser": "^8.70.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-sonarjs": "^4.2.0",
+    "globals": "^17.12.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^5.0.0"
+  }
+}

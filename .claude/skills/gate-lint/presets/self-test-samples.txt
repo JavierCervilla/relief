@@ -1,0 +1,17 @@
+# gate-lint · muestras del self-test y de los tests (una por etiqueta de patterns.txt).
+#
+# Formato: <etiqueta>|<línea de muestra, tal cual va al fixture>
+#
+# Vive en un `.txt` A PROPOSITO: el escáner solo mira `.github/workflows/*.yml` y ciertos `*.sh`, así
+# que las muestras no se auto-detectan. Si estuvieran embebidas en `gate-lint.sh` o en el test, el
+# propio gate se marcaría a sí mismo y habría que silenciarlo — un gate que se silencia para poder
+# probarse deja de probar nada.
+#
+# Invariante que comprueba el self-test: TODA etiqueta de patterns.txt tiene aquí su muestra. Al
+# añadir un patrón, añade su muestra o el self-test se pone rojo.
+continue-on-error|        continue-on-error: true
+or-true|          npm run test || true
+advisory|          run: bash security-gate.sh --deps-advisory dashboard
+tail-1|          rc=$(grep -c x fichero | tail -1)
+set-plus-e|          set +e
+allow-failure|        allow-failure: true

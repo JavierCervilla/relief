@@ -1,0 +1,100 @@
+[
+  {
+    "id": "M1",
+    "what": "invariante 1 — se deja reclamar lo que ya tiene otro",
+    "file": "src/server/service.ts",
+    "from": "      if (existing.volunteerId !== volunteerId) {",
+    "to": "      if (false as boolean) {"
+  },
+  {
+    "id": "M2",
+    "what": "invariante 2 — el claim no caduca nunca",
+    "file": "src/server/service.ts",
+    "from": "      if (claim.expiresAt > nowIso) continue;",
+    "to": "      if (true as boolean) continue;"
+  },
+  {
+    "id": "M3",
+    "what": "invariante 3 — sin límite por sesión",
+    "file": "src/server/service.ts",
+    "from": "    if (quotaBefore.claimsThisSession >= LIMITS.maxClaimsPerSession) {",
+    "to": "    if (false as boolean) {"
+  },
+  {
+    "id": "M4",
+    "what": "invariante 3 — sin límite diario",
+    "file": "src/server/service.ts",
+    "from": "    if (quotaBefore.claimsToday >= LIMITS.maxClaimsPerDay) {",
+    "to": "    if (false as boolean) {"
+  },
+  {
+    "id": "M5",
+    "what": "invariante 3 — la cuota se cuenta sobre claims VIVOS, así que liberar la devolvería",
+    "file": "src/store/memory-store.ts",
+    "from": "    return this.#claimEvents.filter((event) => event.sessionId === sessionId).length;",
+    "to": "    return [...this.#claims.values()].filter((claim) => claim.sessionId === sessionId).length;"
+  },
+  {
+    "id": "M6",
+    "what": "invariante 4 — submit_result no comprueba el claim",
+    "file": "src/server/service.ts",
+    "from": "    await this.#requireLiveClaim(task, expired);\n\n    // El resultado",
+    "to": "\n    // El resultado"
+  },
+  {
+    "id": "M7",
+    "what": "invariante 4 — la etiqueta no tiene que estar en el conjunto cerrado",
+    "file": "src/server/service.ts",
+    "from": "      if (!task.labels.includes(input.result.label)) {",
+    "to": "      if (false as boolean) {"
+  },
+  {
+    "id": "M8",
+    "what": "invariante 4 — el tipo de resultado no tiene que casar con el de la tarea",
+    "file": "src/server/service.ts",
+    "from": "    if (input.result.type !== task.type) {",
+    "to": "    if (false as boolean) {"
+  },
+  {
+    "id": "M9",
+    "what": "invariante 5 — el contenido sale en crudo, sin valla",
+    "file": "src/server/service.ts",
+    "from": "        untrustedContent: wrapUntrusted(task.content),",
+    "to": "        untrustedContent: task.content,"
+  },
+  {
+    "id": "M10",
+    "what": "valla — sin neutralizar el nonce que venga en el contenido",
+    "file": "src/server/untrusted.ts",
+    "from": "  const safe = content.replaceAll(nonce, \"[marca neutralizada]\");",
+    "to": "  const safe = content;"
+  },
+  {
+    "id": "M11",
+    "what": "valla — marcas fijas sin nonce, o sea falsificables desde el contenido",
+    "file": "src/server/untrusted.ts",
+    "from": "export function endMarker(nonce: string): string {\n  return `----- FIN CONTENIDO NO CONFIABLE ${nonce} -----`;\n}",
+    "to": "export function endMarker(_nonce: string): string {\n  return `----- FIN CONTENIDO NO CONFIABLE -----`;\n}"
+  },
+  {
+    "id": "M12",
+    "what": "list_tasks — enseña también las tareas ya reclamadas por otro",
+    "file": "src/server/service.ts",
+    "from": "      .filter((task) => task.status === \"open\")",
+    "to": "      .filter(() => true)"
+  },
+  {
+    "id": "M13",
+    "what": "get_task — le enseña a cualquiera el claim ajeno como si fuera suyo",
+    "file": "src/server/service.ts",
+    "from": "    const yourClaim =\n      claim !== undefined && claim.volunteerId === this.#session.volunteerId ? claim : null;",
+    "to": "    const yourClaim = claim ?? null;"
+  },
+  {
+    "id": "M14",
+    "what": "claim_task — reclamar lo tuyo otra vez consume cuota y renueva el TTL",
+    "file": "src/server/service.ts",
+    "from": "    const existing = await this.#store.getClaim(task.id);",
+    "to": "    const existing = undefined as Claim | undefined;"
+  }
+]
