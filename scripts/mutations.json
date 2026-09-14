@@ -152,5 +152,12 @@
     "file": "src/server/mcp.ts",
     "from": "      // SIN `readOnlyHint`. Mirar la cola devuelve a la cola los claims caducados, así que esto",
     "to": "      annotations: { readOnlyHint: true },\n      // SIN `readOnlyHint`. Mirar la cola devuelve a la cola los claims caducados, así que esto"
+  },
+  {
+    "id": "M23",
+    "what": "get_task deja de caducar claims — la razón por la que no puede anunciarse como sólo-lectura",
+    "file": "src/server/service.ts",
+    "from": "  async getTask(input: GetTaskInput) {\n    await this.#expireStaleClaims();",
+    "to": "  async getTask(input: GetTaskInput) {"
   }
 ]

@@ -12,15 +12,18 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { LIMITS } from "../src/schema/task.js";
 import { createRelevoServer } from "../src/server/mcp.js";
-import { harness } from "./helpers.js";
+import { harness, type Harness } from "./helpers.js";
 
 const TOOLS = ["list_tasks", "get_task", "claim_task", "release_task", "submit_result"];
 
 let client: Client;
+/** El harness se guarda para poder mover el reloj: sin él, un test de caducidad no puede existir. */
+let h: Harness;
 
 beforeEach(async () => {
-  const h = await harness();
+  h = await harness();
   const server = createRelevoServer(h.service);
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   client = new Client({ name: "test", version: "0.0.0" });
@@ -48,10 +51,22 @@ describe("superficie MCP", () => {
     }
   });
 
-  it("y de hecho listar caduca claims: la prueba de que no es sólo-lectura", async () => {
+  it("y `get_task` ESCRIBE: una lectura pasada el TTL devuelve la tarea a la cola", async () => {
+    // La primera versión de este test aseguraba "Estado: claimed" justo después de reclamar, o sea una
+    // verdad que ya lo era antes de la acción que decía probar: quitar la caducidad de `getTask` lo
+    // dejaba verde. Lo cazó el verificador. Ahora la única llamada entre el reloj y el aserto es la
+    // lectura, así que el cambio de estado sólo puede venir de ella.
     await client.callTool({ name: "claim_task", arguments: { taskId: "kiva-0001" } });
-    const before = await client.callTool({ name: "get_task", arguments: { taskId: "kiva-0001" } });
-    expect(textOf(before)).toContain("Estado: claimed");
+    expect((await h.store.getTask("kiva-0001"))?.status).toBe("claimed");
+
+    h.clock.advanceMinutes(LIMITS.claimTtlMs / 60_000 + 1);
+    // El reloj solo no cambia nada: hasta que alguien mire, la tarea sigue reclamada en el store.
+    expect((await h.store.getTask("kiva-0001"))?.status).toBe("claimed");
+
+    await client.callTool({ name: "get_task", arguments: { taskId: "kiva-0001" } });
+
+    expect((await h.store.getTask("kiva-0001"))?.status).toBe("open");
+    expect(await h.store.getClaim("kiva-0001")).toBeUndefined();
   });
 
   it("las descripciones dicen que esto no se hace en bucle", async () => {
