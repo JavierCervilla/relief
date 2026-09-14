@@ -1,0 +1,541 @@
+/*
+ * La landing. Una sola página, dos idiomas, sin framework de CSS.
+ *
+ * Todo color y toda fuente salen de `tokens.css`: aquí no hay ni un literal de color. Esa es la regla
+ * que hace auditable la paleta — si aparece un `#` en este fichero, es una violación, no una opinión.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Sin `scroll-behavior: smooth`: el único movimiento con intención es la bifurcación. */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--arena);
+  color: var(--tinta);
+  font-family: var(--texto);
+  font-size: 16px;
+  line-height: 1.65;
+  font-synthesis-weight: none;
+}
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+  max-width: var(--medida);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  line-height: 1.18;
+  color: var(--petroleo);
+  text-wrap: balance;
+}
+
+a {
+  color: var(--accion);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--tinta);
+}
+
+/*
+ * Foco visible SIEMPRE, y con contraste propio. Quitar el outline por estética es la forma más rápida
+ * de dejar una página inutilizable con teclado, y esta va dirigida en parte a gente de accesibilidad.
+ */
+:focus-visible {
+  outline: 3px solid var(--accion);
+  outline-offset: 3px;
+}
+
+/* --- Enlace de salto: invisible hasta que recibe foco ---------------------- */
+.saltar {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--petroleo);
+  color: var(--papel-en-petroleo);
+  padding: 14px 20px;
+  z-index: 10;
+  text-decoration: none;
+}
+
+.saltar:focus {
+  left: 0;
+}
+
+/* --- Filete superior de tres tramos. No es un degradado. ------------------- */
+.marca {
+  display: grid;
+  grid-template-columns: 5fr 2fr 3fr;
+  height: 8px;
+}
+
+.marca > :nth-child(1) {
+  background: var(--petroleo);
+}
+
+.marca > :nth-child(2) {
+  background: var(--accion-viva);
+}
+
+.marca > :nth-child(3) {
+  background: var(--petroleo-vivo);
+}
+
+/* --- Retícula de sección: columna de marcadores + columna de texto --------- */
+.seccion {
+  display: grid;
+  grid-template-columns: var(--margen-seccion) minmax(0, 640px);
+  gap: var(--gutter);
+  padding: 60px 96px;
+}
+
+.seccion--ancha {
+  grid-template-columns: var(--margen-seccion) minmax(0, 740px);
+}
+
+.seccion__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.banda--honda {
+  background: var(--arena-honda);
+  border-top: 1px solid var(--arena-borde);
+  border-bottom: 1px solid var(--arena-borde);
+}
+
+.banda--petroleo {
+  background: var(--petroleo);
+  color: var(--papel-en-petroleo);
+}
+
+.banda--petroleo h2 {
+  color: inherit;
+}
+
+/* --- Marcador de sección (§1, §2…) ---------------------------------------- */
+.marcador {
+  padding-top: 8px;
+}
+
+.marcador__num {
+  font-family: var(--display);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--petroleo-vivo);
+}
+
+.marcador__filete {
+  width: 34px;
+  height: 3px;
+  background: var(--petroleo-vivo);
+  margin: 10px 0;
+}
+
+.marcador__texto {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--petroleo-texto);
+}
+
+.banda--petroleo .marcador__num,
+.banda--petroleo .marcador__filete {
+  color: var(--accion-en-petroleo);
+  background-color: var(--accion-en-petroleo);
+}
+
+.banda--petroleo .marcador__num {
+  background: none;
+}
+
+.banda--petroleo .marcador__texto {
+  color: var(--suave-en-petroleo);
+}
+
+/* --- Cabecera -------------------------------------------------------------- */
+.cabecera__nombre {
+  font-family: var(--display);
+  font-size: clamp(48px, 7vw, 76px);
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  color: var(--petroleo);
+}
+
+.cabecera__lede {
+  font-family: var(--display);
+  font-size: clamp(22px, 2.6vw, 27px);
+  line-height: 1.4;
+  max-width: 32ch;
+}
+
+.cabecera__entradilla {
+  color: var(--tinta-suave);
+  max-width: 58ch;
+}
+
+/* --- Conmutador de idioma -------------------------------------------------- */
+.idiomas {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 96px 0;
+}
+
+.idiomas a {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--petroleo-texto);
+  text-decoration-thickness: 1px;
+  padding: 8px 4px;
+}
+
+.idiomas a:hover {
+  color: var(--accion);
+}
+
+/* --- Los tres pasos -------------------------------------------------------- */
+.pasos {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.paso {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  background: var(--arena);
+  padding: 20px 24px;
+  border-left: 4px solid var(--accion-viva);
+}
+
+.paso__num {
+  font-family: var(--display);
+  font-size: 40px;
+  line-height: 0.9;
+  color: var(--accion-viva);
+}
+
+/* --- «Qué no es»: cuatro afirmaciones -------------------------------------- */
+.noes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 30px 40px;
+}
+
+.noes__punto {
+  border-top: 2px solid var(--accion-en-petroleo);
+  padding-top: 16px;
+}
+
+.noes__titulo {
+  font-weight: 600;
+  font-size: 17px;
+  margin-bottom: 8px;
+}
+
+.noes__cuerpo {
+  color: var(--suave-en-petroleo);
+  font-size: 15px;
+  max-width: none;
+}
+
+/* --- Los topes -------------------------------------------------------------- */
+.topes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  background: var(--arena-borde);
+}
+
+.tope {
+  background: var(--arena-honda);
+  padding: 22px 20px;
+}
+
+.tope__cifra {
+  font-family: var(--display);
+  font-size: 52px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--accion-viva);
+}
+
+.tope__etiqueta {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--petroleo-texto);
+  margin-top: 10px;
+}
+
+/* --- La bifurcación --------------------------------------------------------- */
+.bifurcacion__botones {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.boton {
+  font-family: var(--texto);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 15px 24px;
+  min-height: 50px;
+  border-radius: 2px;
+  cursor: pointer;
+  line-height: 1.3;
+  text-align: left;
+  background: transparent;
+  color: var(--petroleo);
+  border: 2px solid var(--petroleo-vivo);
+  transition: background var(--dur-rapida) var(--ease), color var(--dur-rapida) var(--ease),
+    border-color var(--dur-rapida) var(--ease);
+}
+
+.boton[aria-expanded="true"] {
+  background: var(--accion);
+  color: var(--arena);
+  border-color: var(--accion);
+}
+
+/* El no elegido se atenúa: es el único sitio donde el movimiento informa. */
+.bifurcacion[data-elegida] .boton[aria-expanded="false"] {
+  color: var(--tinta-suave);
+  border-color: var(--arena-borde);
+}
+
+.ficha {
+  background: var(--arena);
+  border-top: 4px solid var(--accion-viva);
+  padding: 28px 30px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.ficha__filas {
+  display: grid;
+  grid-template-columns: 158px minmax(0, 1fr);
+  gap: 16px 24px;
+  font-size: 15px;
+}
+
+.ficha__etiqueta {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--petroleo-texto);
+  padding-top: 5px;
+}
+
+.ficha__codigo {
+  font-family: var(--mono);
+  font-size: 13px;
+  background: var(--petroleo);
+  color: var(--papel-en-petroleo);
+  padding: 18px 20px;
+  line-height: 1.75;
+  overflow-x: auto;
+  border-left: 4px solid var(--petroleo-vivo);
+  margin: 0;
+  white-space: pre;
+}
+
+.ficha__accion {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.cta {
+  display: inline-block;
+  font-family: var(--texto);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 15px 24px;
+  min-height: 50px;
+  background: var(--accion);
+  color: var(--arena);
+  text-decoration: none;
+  border-radius: 2px;
+}
+
+.cta:hover {
+  background: var(--petroleo);
+  color: var(--papel-en-petroleo);
+}
+
+.ficha__copia {
+  font-size: 14px;
+  color: var(--tinta-suave);
+}
+
+.ficha__correo {
+  font-family: var(--mono);
+  background: var(--arena-honda);
+  padding: 4px 8px;
+  color: var(--petroleo-texto);
+}
+
+/* --- «Dónde estamos»: la única marca ocre ----------------------------------- */
+.estado {
+  border-left: 4px solid var(--ocre);
+  padding-left: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.estado h2 {
+  font-size: 29px;
+}
+
+/* --- Pie ---------------------------------------------------------------------- */
+.pie {
+  background: var(--petroleo);
+  color: var(--suave-en-petroleo);
+  padding: 32px 96px 36px;
+  font-size: 14px;
+  display: flex;
+  gap: 26px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.pie a {
+  color: var(--accion-en-petroleo);
+}
+
+.pie a:hover {
+  color: var(--papel-en-petroleo);
+}
+
+/*
+ * Mejora progresiva de la bifurcación.
+ *
+ * SIN JavaScript las dos fichas se ven, abiertas, y los botones no aparecen: un botón que no hace nada
+ * es peor que no tenerlo. CON JavaScript los botones aparecen y las fichas se pliegan.
+ *
+ * La clase `js` la pone un script en el `<head>`, antes de pintar, para que no haya parpadeo. Es lo que
+ * permite que el contenido esté SIEMPRE en el HTML — que es también lo que hace que los tests de
+ * honestidad puedan leerlo sin ejecutar un navegador.
+ */
+.bifurcacion__botones {
+  display: none;
+}
+
+.js .bifurcacion__botones {
+  display: flex;
+}
+
+.js .ficha[hidden] {
+  display: none;
+}
+
+/* --- Móvil ---------------------------------------------------------------------- */
+@media (max-width: 860px) {
+  .seccion,
+  .seccion--ancha {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding: 36px 24px;
+  }
+
+  .idiomas,
+  .pie {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .marcador {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-top: 0;
+  }
+
+  .marcador__num {
+    font-size: 26px;
+  }
+
+  .marcador__filete {
+    margin: 0;
+    width: 26px;
+  }
+
+  .noes {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+  }
+
+  .ficha__filas {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px 0;
+  }
+
+  .ficha__etiqueta {
+    padding-top: 12px;
+  }
+
+  .bifurcacion__botones {
+    flex-direction: column;
+  }
+
+  .js .bifurcacion__botones .boton,
+  .cta {
+    width: 100%;
+    min-height: 54px;
+  }
+
+  .ficha {
+    padding: 22px 20px 24px;
+  }
+
+  .paso {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px 18px;
+  }
+
+  .paso__num {
+    font-size: 28px;
+  }
+
+  .tope {
+    padding: 16px 12px;
+  }
+
+  .tope__cifra {
+    font-size: 38px;
+  }
+
+  .estado {
+    padding-left: 20px;
+  }
+}

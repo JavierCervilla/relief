@@ -5,6 +5,74 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No publicado]
 
+### Añadido — la landing pública, bilingüe (RELE-3)
+
+`web/`: sitio Astro estático, paquete npm propio para que el build de la web y el del servidor MCP no
+se entrelacen. Dos rutas, `/` en castellano y `/en/` en inglés.
+
+Es la pieza que faltaba para poder *empezar* la fase 1 del roadmap: RELE-1 y RELE-2 dieron por supuesto
+que alguien diría que sí, y hasta ahora no había ni un sitio al que mandar a esa persona.
+
+- **Diccionario tipado** contra una interfaz escrita a mano, no derivada del castellano: los dos
+  idiomas se miden contra lo mismo y a los dos les puede faltar algo. Si falta una clave, no compila.
+  Y un test compara las rutas completas de ambos, porque una LISTA más corta —un paso, una fila— sí
+  compila.
+- **Formulario por `mailto:`** con asunto y cuerpo prerrellenados, distintos por vía y por idioma. La
+  dirección vive en `web/src/config.ts` y en ningún otro fichero, comprobado por test.
+- **Fuentes auto-alojadas**: 202 KB, sólo el subconjunto `latin`, cinco ficheros versionados. Se midió
+  antes: la variable de Newsreader con eje óptico costaba 129 KB para dos pesos que nadie interpola.
+- **Paleta OKLCH** con una regla por familia (naranja = acción, petróleo = estructura, arena = papel).
+
+### Añadido — las dos restricciones de honestidad, como gate
+
+No son buenas intenciones en un documento: son tests sobre el **HTML renderizado**, y los tres se han
+visto en rojo antes de darlos por buenos.
+
+- Ninguna organización real se nombra. Las que hay en las fixtures del servidor son datos de prueba,
+  no socios, y nombrarlas en público sugeriría un respaldo inexistente — el daño exacto que el diseño
+  de consentimiento de Relevo intenta evitar.
+- Ninguna cifra de actividad. Cada número visible tiene que estar en una lista de permitidos **con su
+  motivo escrito**; cualquier otro es, por defecto, una métrica inventada, y no hay ni una tarea
+  completada que respalde ninguna.
+- Ningún tercero. Ni fuentes, ni analítica, ni CDN — comprobado también sobre el **CSS emitido**, que
+  es donde se escondería un `@import` y donde la primera versión del test no miraba.
+
+### Añadido — accesibilidad verificada, no prometida
+
+- **Contraste AA medido por test**: parsea `tokens.css`, convierte cada OKLCH a sRGB y recalcula los
+  17 pares que la página pinta. Si alguien retoca un token y rompe la legibilidad, la suite se pone
+  roja. Un test que reescribiera los hex verificaría su propia copia.
+- **Bifurcación por mejora progresiva**: sin JavaScript las dos fichas se sirven abiertas y los botones
+  no se pintan. Un botón que no hace nada es peor que no tenerlo — y es lo que permite que el contenido
+  esté siempre en el HTML, para un lector de pantalla y para estos mismos tests.
+- Enlace de salto, foco visible con contraste propio, `prefers-reduced-motion` respetado, objetivos
+  táctiles de 50-54 px y retícula que se pliega a una columna en móvil.
+
+### Añadido — el gate de frontend muerde en CI
+
+Linter anti-slop **vendorizado** en `.claude/skills/frontend-anti-slop/`. La primera versión lo
+invocaba por su ruta en el repo del framework: funcionaba en la sesión del agente, donde los dos repos
+están clonados al lado, y habría pasado siempre en CI, donde `relief` se clona solo.
+
+### Seguridad — Astro 5 → 7.3.2, forzado por el gate
+
+El gate de seguridad justificó su existencia el mismo día que se instaló. `astro@^5` resolvía a
+5.18.2, dentro del rango afectado por **1 CVE crítica y 1 alta**: XSS por sanitización incompleta de
+`</script>` en `define:vars`, XSS por nombres de atributo sin escapar en spread props, SSRF por
+cabecera Host en la página de error pre-renderizada, y **RCE por optimización de imagen AVIF**, más
+las de `libvips`/`libheif` heredadas por `sharp`. Arreglado subiendo a `astro@7.3.2`.
+
+La subida rompió dos tests, y el motivo importa: comparaban el `href` del `mailto:` **byte a byte**
+con el escapado de Astro 5, y Astro 7 escapa `'` como `&#39;`. La página no había cambiado — el
+aserto medía el *mecanismo* en vez de la *propiedad*. Ahora se comparan los `href` desescapados: el
+enlace que un navegador seguiría de verdad.
+
+`osv-scanner` recursivo ya cubría `web/package-lock.json` (comprobado: 377 paquetes). El `npm audit`
+de la escalera, no — corre sólo en la raíz —, así que el job de la web lo ejecuta aparte.
+
+Estado: 54 tests, `astro check` sin errores, anti-slop LIMPIO con 5 excepciones trazadas, escalera de
+seguridad LIMPIA y `gate-lint` en verde.
+
 ### Añadido — segunda vía: proyectos open source
 
 - **Las tareas pueden venir de proyectos open source**, no sólo de ONGs, con **consentimiento en dos

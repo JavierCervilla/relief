@@ -25,6 +25,38 @@ decir *probado y de camino a `main`*, nunca "lo tengo casi".
 - [x] Frase de divulgación redactada por el servidor
 - [x] Filtro por vía en `list_tasks`, y fixtures de las dos
 
+## Fase 0.75 — La landing (RELE-3) · completa
+
+La pieza que faltaba para poder *empezar* la fase 1: hasta ahora no había ni un sitio al que mandar a
+la primera persona interesada.
+
+- [x] Sitio Astro estático en `web/`, paquete propio para no entrelazar su build con el del servidor MCP
+- [x] Una página, dos caminos (organización / proyecto open source), cada uno con lo que necesita
+- [x] **Bilingüe `es` + `en`** con diccionario tipado: si a un idioma le falta una clave, no compila
+- [x] Formulario por `mailto:` con asunto y cuerpo prerrellenados **distintos por vía y por idioma**
+- [x] Fuentes **auto-alojadas** (202 KB, sólo subconjunto `latin`): la página no filtra a sus
+      visitantes a ningún tercero, y hay un test que lo comprueba sobre el CSS emitido
+- [x] Paleta OKLCH con regla de uso auditable, y **contraste AA medido** por un test que parsea
+      `tokens.css` y recalcula los 17 pares — no una promesa en un comentario
+- [x] Los dos vetos de honestidad, como test sobre el **HTML renderizado** y vistos en rojo:
+      ningún nombre de organización, ninguna cifra de actividad
+- [x] Bifurcación por mejora progresiva: sin JavaScript las dos fichas se sirven abiertas
+- [x] Linter anti-slop de frontend vendorizado en el repo, mordiendo en CI
+
+### Lo que la landing NO hace todavía
+
+- [ ] **Poner la dirección de contacto real.** Hoy es un marcador en `web/src/config.ts`, y un test
+      comprueba que la cadena vive en ese fichero y en ningún otro. Publicar un correo en una página
+      pública es irreversible: lo decide una persona, no el agente.
+- [ ] **Restyling.** Veredicto del humano al aprobar el lienzo: «habrá que pulirla y probablemente
+      reciba un restyling para que no parezca una página generada por IA». El gate determinista ya
+      pasa —no hay fuente genérica de marca ni degradado cliché—, así que lo que queda no es algo que
+      un linter sepa medir: es la regularidad y la ausencia de idiosincrasia. Trayectoria aparte.
+- [ ] **Desplegar.** Decisión del humano, y con ella se fija `site` en `astro.config.mjs` para que
+      `canonical` y `hreflang` pasen de relativos a absolutos.
+- [ ] Más idiomas. La estructura los soporta (una entrada en `IDIOMAS` y un diccionario); no se
+      traducen aquí.
+
 ## Fase 1 — Que alguien diga que sí (ONG **y** proyecto open source)
 
 Esta fase **no es de código** y es la que bloquea a las demás. Las dos vías van **con el mismo peso**: el

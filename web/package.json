@@ -1,0 +1,27 @@
+{
+  "name": "relevo-web",
+  "version": "0.1.0",
+  "description": "Landing pública de Relevo (es/en). Astro estático, sin backend.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check --minimumSeverity error",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "fonts": "node scripts/fetch-fonts.mjs",
+    "gate": "npm run typecheck && npm run antislop && npm run build && npm test",
+    "antislop": "bash ../.claude/skills/frontend-anti-slop/scripts/audit-anti-slop.sh src"
+  },
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "astro": "^7.3.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.0"
+  },
+  "private": true,
+  "type": "module"
+}

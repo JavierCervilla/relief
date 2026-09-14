@@ -1,0 +1,95 @@
+/*
+ * La paleta de Relevo, en OKLCH.
+ *
+ * Tres familias con un TRABAJO cada una. La regla es lo que hace la paleta auditable en revisión sin
+ * discutir de gustos, y está escrita para que se pueda citar en un comentario de PR:
+ *
+ *   1. Naranja  = SÓLO acción. Botones, enlaces, los ordinales del «cómo funciona».
+ *                 Si un naranja no se puede pulsar ni seguir, sobra.
+ *   2. Petróleo = SÓLO estructura. Marcadores §, filetes, titulares, fondo del §2 y del pie.
+ *                 Nunca marca algo accionable, o la regla 1 deja de significar nada.
+ *   3. Arena    = el papel, en dos profundidades que alternan por sección. Ese ritmo de bandas es lo
+ *                 que quita la sobriedad SIN meter un degradado, que sigue vetado.
+ *
+ * Los contrastes del margen están MEDIDOS, no estimados: `tests/contraste.test.ts` PARSEA este fichero,
+ * convierte cada OKLCH a sRGB y recalcula los 17 pares que la página pinta de verdad. Si alguien
+ * retoca un token y rompe la legibilidad, la suite se pone roja. El par más ajustado es --accion-viva
+ * (3.28), y por eso sólo se usa a 38px o más, donde el mínimo de WCAG es 3.0.
+ *
+ * Los equivalentes en hex NO se escriben aquí a propósito: viven en la tabla del brief
+ * (`Contexto_Base_SRE/trayectorias/RELE-3/artifacts/design_brief_landing.md`, §4). Escribirlos también
+ * en los comentarios serían dos verdades que pueden divergir, y la de abajo es la que sirve el
+ * navegador.
+ */
+
+:root {
+  /* --- Arena: el papel --------------------------------------------------- */
+  --arena: oklch(0.958 0.02 80);            /* fondo por defecto                  */
+  --arena-honda: oklch(0.918 0.03 74);      /* bandas §1 y §4, celdas de los topes */
+  --arena-borde: oklch(0.845 0.022 74);     /* filetes y separadores              */
+
+  /* --- Petróleo: estructura ---------------------------------------------- */
+  --petroleo: oklch(0.285 0.048 196);       /* fondo del §2 y del pie; titulares  */
+  --petroleo-vivo: oklch(0.55 0.125 190);   /* marcadores § y sus filetes         */
+  --petroleo-texto: oklch(0.42 0.095 192);  /* etiquetas mono pequeñas            */
+
+  /* --- Tinta: el texto ---------------------------------------------------- */
+  --tinta: oklch(0.255 0.03 55);            /* texto corrido                      */
+  --tinta-suave: oklch(0.475 0.028 58);     /* texto secundario                   */
+
+  /* --- Naranja: SÓLO acción ----------------------------------------------- */
+  --accion: oklch(0.52 0.16 45);            /* botones y enlaces                  */
+  --accion-viva: oklch(0.6 0.17 48);        /* cifras y ordinales, ≥38px          */
+  --accion-en-petroleo: oklch(0.72 0.145 52); /* el naranja dentro del §2         */
+
+  /* --- Sobre petróleo ------------------------------------------------------ */
+  --papel-en-petroleo: oklch(0.945 0.022 80);
+  --suave-en-petroleo: oklch(0.8 0.038 92);
+
+  /* --- Ocre: una sola marca, la del §5 ------------------------------------- */
+  --ocre: oklch(0.68 0.115 82);
+
+  /* --- Tipografía ----------------------------------------------------------
+     Auto-alojadas en /fonts/: una página que pide confianza no empieza
+     filtrando a sus visitantes a un CDN de terceros. */
+  --display: "Newsreader", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  /* La marca es Archivo; lo que sigue es la pila de RESERVA, y su trabajo es justamente ser una
+     genérica de métricas cercanas para que un fallo de carga no descuadre la composición. El veto del
+     linter es a la genérica como fuente DE MARCA, no como red de seguridad.
+     anti-slop-allow: pila de reserva, no fuente de marca */
+  --texto: "Archivo", "Segoe UI", "Helvetica Neue", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* --- Ritmo ---------------------------------------------------------------- */
+  --medida: 60ch;          /* medida de línea del texto corrido */
+  --margen-seccion: 104px; /* columna de los marcadores § */
+  --gutter: 32px;
+
+  /* --- Movimiento ------------------------------------------------------------
+     Pocos momentos, con su duración tokenizada. Nada de números mágicos
+     dispersos por el CSS. */
+  --dur-rapida: 120ms;
+  --dur-media: 220ms;
+  --ease: cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+/*
+ * Reducción de movimiento. No es un extra: parte de la audiencia de esta página llega desde
+ * accesibilidad y lectura fácil, y una web sobre lectura fácil que ignora `prefers-reduced-motion`
+ * se descalifica sola antes del primer párrafo.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-rapida: 0ms;
+    --dur-media: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;  /* anti-slop-allow: anular animación de terceros exige !important */
+    animation-iteration-count: 1 !important;  /* anti-slop-allow: idem */
+    transition-duration: 0.01ms !important;  /* anti-slop-allow: idem */
+    scroll-behavior: auto !important;  /* anti-slop-allow: idem */
+  }
+}

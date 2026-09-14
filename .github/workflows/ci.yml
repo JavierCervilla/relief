@@ -71,6 +71,58 @@ jobs:
       - name: Escanear los gates del repo
         run: bash .claude/skills/gate-lint/scripts/gate-lint.sh .
 
+
+  web:
+    name: Web · landing es/en (typecheck + anti-slop + build + tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Typecheck (.astro incluidos)
+        run: npm run typecheck
+      - name: Linter anti-slop de frontend
+        # El script está VENDORIZADO en `.claude/skills/frontend-anti-slop/`, no se invoca desde el
+        # repo del framework. La primera versión llamaba a la ruta del framework, que en CI no existe:
+        # habría pasado siempre, y por el motivo equivocado. Ver el NOTICE de esa carpeta.
+        run: npm run antislop
+      - name: Build estático
+        run: npm run build
+      - name: Tests
+        # Tienen que ir DESPUÉS del build: los de `render.test.ts` leen `dist/`, porque el agujero que
+        # cierran vive entre el diccionario y la plantilla. En RELE-2 el bloqueante fue exactamente
+        # esa clase de fallo — tres campos añadidos a una salida sin tocar el renderizador, así que el
+        # modelo los recibía y la persona no los veía nunca.
+        run: npm test
+      - name: Auditoría de dependencias de la web
+        # `security-gate.sh .` YA cubre este lockfile: se comprobó que osv-scanner recursivo lo
+        # encuentra (377 paquetes). Lo que NO llega es su `npm audit`, que corre sólo en la raíz del
+        # repo. Este paso cierra esa mitad, y usa otra base de datos (el advisory DB de npm) que no
+        # siempre coincide con OSV.
+        #
+        # No es hipotético: al montar la web, `astro@^5` traía 1 crítica y 1 alta —XSS por
+        # sanitización incompleta de `</script>` y RCE por optimización AVIF— y hubo que subir a
+        # `astro@7.3.2`. Sin este peldaño, un `npm install` futuro puede volver a meterlas.
+        run: npm audit --audit-level=high
+
+      - name: Las fuentes auto-alojadas están en el sitio construido
+        # `fetch-fonts.mjs` NO corre en CI a propósito: las fuentes se versionan. Un build que dependa
+        # de la red para renderizar texto se cae el día que Google cambie una URL. Esto comprueba que
+        # los cinco ficheros viajaron con el repo.
+        run: |
+          set -euo pipefail
+          encontradas=$(find dist/fonts -name '*.woff2' | wc -l)
+          echo "woff2 en dist/: $encontradas"
+          test "$encontradas" -eq 5
+
   security:
     name: Guardián · escalera de seguridad (secretos + SAST + deps)
     runs-on: ubuntu-latest

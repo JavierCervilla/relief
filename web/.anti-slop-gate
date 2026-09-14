@@ -1,0 +1,5 @@
+{
+  "skill": "frontend-anti-slop",
+  "version": 1,
+  "nota": "El gate anti-slop de esta web es el linter de frontend (npm run antislop), no el preset ESLint de backend: aqui no hay logica de servidor, hay tokens y plantillas."
+}
