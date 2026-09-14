@@ -1,0 +1,272 @@
+---
+import { CORREO_CONTACTO, CORREO_ES_MARCADOR } from "../config.js";
+import { CODIGOS, IDIOMAS, OTRO_IDIOMA, construirMailto, type CodigoIdioma } from "../i18n/index.js";
+import type { Via } from "../i18n/types.js";
+
+import "../styles/tokens.css";
+import "../styles/fonts.css";
+import "../styles/landing.css";
+
+interface Props {
+  readonly codigo: CodigoIdioma;
+}
+
+const { codigo } = Astro.props;
+const t = IDIOMAS[codigo].copy;
+const otro = OTRO_IDIOMA[codigo];
+
+/**
+ * Base absoluta para `hreflang` y `canonical`.
+ *
+ * `site` no está fijado en `astro.config.mjs` porque el dominio todavía no existe: una URL canónica
+ * inventada es peor que no tenerla. Sin `site`, esto cae a rutas relativas a la raíz, que funcionan;
+ * el día que haya dominio, fijarlo en la config rellena las dos cosas sin tocar este fichero.
+ */
+const base = Astro.site?.href.replace(/\/$/, "") ?? "";
+
+/** Las dos vías, con su `mailto:` ya construido de su PROPIO idioma. */
+const vias: readonly { id: string; via: Via }[] = [
+  { id: "ong", via: t.bifurcacion.ong },
+  { id: "oss", via: t.bifurcacion.oss },
+];
+---
+
+<!doctype html>
+<html lang={t.meta.lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{t.meta.titulo}</title>
+    <meta name="description" content={t.meta.descripcion} />
+    <link rel="canonical" href={`${base}${IDIOMAS[codigo].ruta}`} />
+    {
+      CODIGOS.map((c) => (
+        <link rel="alternate" hreflang={IDIOMAS[c].copy.meta.lang} href={`${base}${IDIOMAS[c].ruta}`} />
+      ))
+    }
+    <link rel="alternate" hreflang="x-default" href={`${base}${IDIOMAS.es.ruta}`} />
+    {/* Sin analítica y sin CDN de terceros: es un anti-objetivo del brief, no un olvido. */}
+    <script is:inline>
+      // Antes de pintar, para que la bifurcación no parpadee abierta y luego se pliegue.
+      document.documentElement.classList.add("js");
+    </script>
+  </head>
+
+  <body>
+    <a class="saltar" href="#contenido">{t.meta.saltarAlContenido}</a>
+
+    <div class="marca" aria-hidden="true"><div></div><div></div><div></div></div>
+
+    <nav class="idiomas">
+      <a href={IDIOMAS[otro].ruta} hreflang={IDIOMAS[otro].copy.meta.lang} lang={IDIOMAS[otro].copy.meta.lang} aria-label={t.meta.otroIdiomaAria}>
+        {t.meta.otroIdioma}
+      </a>
+    </nav>
+
+    <main>
+      <header class="seccion">
+      <div class="marcador"><span class="marcador__texto">{t.cabecera.licencia}</span></div>
+      {/*
+        `tabindex="-1"` no es decorativo: sin él, Safari y VoiceOver dejan el foco donde estaba al
+        pulsar el enlace de salto, y Chrome/Firefox sólo mueven el punto de navegación secuencial.
+        Para una página cuya audiencia declarada incluye a gente de accesibilidad, el enlace de salto
+        es lo primero que se prueba. Lo cazó el verificador en RELE-3.
+      */}
+      <div class="seccion__cuerpo" id="contenido" tabindex="-1">
+        <h1 class="cabecera__nombre">Relevo</h1>
+        <p class="cabecera__lede">{t.cabecera.lede}</p>
+        <p class="cabecera__entradilla">{t.cabecera.entradilla}</p>
+      </div>
+    </header>
+
+    <!-- §1 — qué es -->
+    <section class="banda--honda">
+      <div class="seccion">
+        <div class="marcador">
+          <div class="marcador__num">§1</div>
+          <div class="marcador__filete"></div>
+          <div class="marcador__texto">{t.queEs.etiqueta}</div>
+        </div>
+        <div class="seccion__cuerpo">
+          <h2>{t.queEs.titulo}</h2>
+          <p>{t.queEs.intro}</p>
+          {/*
+            `role="list"` con `list-style: none` puesto desde el CSS: en Safari+VoiceOver quitar las
+            viñetas ELIMINA la semántica de lista, y los tres pasos dejan de anunciarse como «lista de
+            3 elementos» — que es justo la información que hace entendible una secuencia.
+          */}
+          <ol class="pasos" role="list">
+            {
+              t.queEs.pasos.map((paso, i) => (
+                <li class="paso">
+                  <div class="paso__num" aria-hidden="true">{i + 1}</div>
+                  <div><strong>{paso.titulo}</strong> {paso.cuerpo}</div>
+                </li>
+              ))
+            }
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- §2 — qué NO es. Arriba, no en el pie. -->
+    <section class="banda--petroleo">
+      <div class="seccion seccion--ancha">
+        <div class="marcador">
+          <div class="marcador__num">§2</div>
+          <div class="marcador__filete"></div>
+          <div class="marcador__texto">{t.queNoEs.etiqueta}</div>
+        </div>
+        <div class="seccion__cuerpo">
+          <h2>{t.queNoEs.titulo}</h2>
+          <div class="noes">
+            {
+              t.queNoEs.puntos.map((punto) => (
+                <div class="noes__punto">
+                  <div class="noes__titulo">{punto.titulo}</div>
+                  <p class="noes__cuerpo">{punto.cuerpo}</p>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- §3 — los límites -->
+    <section class="seccion">
+      <div class="marcador">
+        <div class="marcador__num">§3</div>
+        <div class="marcador__filete"></div>
+        <div class="marcador__texto">{t.limites.etiqueta}</div>
+      </div>
+      <div class="seccion__cuerpo">
+        <h2>{t.limites.titulo}</h2>
+        <div class="topes">
+          {
+            t.limites.topes.map((tope) => (
+              <div class="tope">
+                <div class="tope__cifra">{tope.cifra}</div>
+                <div class="tope__etiqueta">{tope.etiqueta}</div>
+              </div>
+            ))
+          }
+        </div>
+        {t.limites.parrafos.map((p) => <p>{p}</p>)}
+      </div>
+    </section>
+
+    <!-- §4 — la bifurcación -->
+    <section class="banda--honda">
+      <div class="seccion seccion--ancha">
+        <div class="marcador">
+          <div class="marcador__num">§4</div>
+          <div class="marcador__filete"></div>
+          <div class="marcador__texto">{t.bifurcacion.etiqueta}</div>
+        </div>
+        <div class="seccion__cuerpo bifurcacion" data-bifurcacion>
+          <h2>{t.bifurcacion.titulo}</h2>
+          <p>{t.bifurcacion.intro}</p>
+
+          <div class="bifurcacion__botones">
+            {
+              vias.map(({ id, via }) => (
+                <button type="button" class="boton" data-abre={id} aria-expanded="false" aria-controls={`ficha-${id}`}>
+                  {via.boton}
+                </button>
+              ))
+            }
+          </div>
+
+          {
+            vias.map(({ id, via }) => (
+              <div class="ficha" id={`ficha-${id}`} data-ficha={id}>
+                <h3>{via.titulo}</h3>
+                {via.intro !== undefined && <p class="ficha__intro">{via.intro}</p>}
+                <div class="ficha__filas">
+                  {via.filas.map((fila) => (
+                    <>
+                      <div class="ficha__etiqueta">{fila.etiqueta}</div>
+                      <div>{fila.texto}</div>
+                    </>
+                  ))}
+                </div>
+                {via.bloqueCodigo !== undefined && <pre class="ficha__codigo">{via.bloqueCodigo.join("\n")}</pre>}
+                <div class="ficha__accion">
+                  <a class="cta" href={construirMailto(via.correo)}>{via.cta}</a>
+                  <div class="ficha__copia">
+                    {via.copiaAntes} <span class="ficha__correo">{CORREO_CONTACTO}</span>
+                    {/*
+                      Mientras la dirección sea el marcador, las dos llamadas a la acción están
+                      MUERTAS. Publicar eso sin decirlo deja a alguien escribiendo a un buzón que no
+                      existe y creyendo que nos ha escrito — en una página cuyo argumento entero es no
+                      prometer lo que no hay. `config.ts` ya afirmaba que este aviso existía; no
+                      existía, y el import de `CORREO_ES_MARCADOR` llevaba sin usarse desde el primer
+                      commit.
+                    */}
+                    {CORREO_ES_MARCADOR && <strong class="ficha__aviso">{t.bifurcacion.avisoCorreo}</strong>}
+                  </div>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- §5 — dónde estamos -->
+    <section class="seccion">
+      <div class="marcador">
+        <div class="marcador__num">§5</div>
+        <div class="marcador__filete"></div>
+        <div class="marcador__texto">{t.estado.etiqueta}</div>
+      </div>
+      <div class="seccion__cuerpo">
+        <div class="estado">
+          <h2>{t.estado.titulo}</h2>
+          {t.estado.parrafos.map((p) => <p>{p}</p>)}
+        </div>
+      </div>
+    </section>
+
+    </main>
+
+    <footer class="pie">
+      <span>{t.pie.licencia}</span>
+      <a href="https://github.com/JavierCervilla/relief">{t.pie.repo}</a>
+    </footer>
+
+    <script is:inline>
+      /*
+       * La bifurcación. Sin framework: son dos botones y dos paneles.
+       *
+       * Mejora progresiva de verdad — sin este script las dos fichas se quedan abiertas y los botones
+       * no se pintan (lo hace el CSS con la clase `js`). Un botón que no hace nada es peor que no
+       * tenerlo, y el contenido tiene que estar en el HTML sí o sí: es lo que leen tanto un lector de
+       * pantalla como los tests de honestidad.
+       */
+      for (const grupo of document.querySelectorAll("[data-bifurcacion]")) {
+        const botones = [...grupo.querySelectorAll("[data-abre]")];
+        const fichas = [...grupo.querySelectorAll("[data-ficha]")];
+
+        const mostrar = (elegida) => {
+          if (elegida === null) grupo.removeAttribute("data-elegida");
+          else grupo.setAttribute("data-elegida", elegida);
+          for (const ficha of fichas) ficha.hidden = ficha.dataset.ficha !== elegida;
+          for (const boton of botones) {
+            boton.setAttribute("aria-expanded", String(boton.dataset.abre === elegida));
+          }
+        };
+
+        for (const boton of botones) {
+          boton.addEventListener("click", () => {
+            const yaAbierta = boton.getAttribute("aria-expanded") === "true";
+            mostrar(yaAbierta ? null : boton.dataset.abre);
+          });
+        }
+
+        mostrar(null);
+      }
+    </script>
+  </body>
+</html>

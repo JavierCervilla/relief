@@ -1,0 +1,625 @@
+/*
+ * La landing. Una sola página, dos idiomas, sin framework de CSS.
+ *
+ * Todo color y toda fuente salen de `tokens.css`: aquí no hay ni un literal de color. Esa es la regla
+ * que hace auditable la paleta — si aparece un `#` en este fichero, es una violación, no una opinión.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Sin `scroll-behavior: smooth`: el único movimiento con intención es la bifurcación. */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--arena);
+  color: var(--tinta);
+  font-family: var(--texto);
+  /*
+   * `rem`, no `px`. Con `font-size: 16px` aquí, la preferencia de tamaño de letra del navegador
+   * llegaba a `<html>` y MORÍA en esta línea: quien la había puesto a 24 o 32 px seguía viendo 16.
+   * Medido en Chromium por `qa-adversario` con `Page.setFontSizes`, no deducido.
+   *
+   * No era incumplimiento formal de WCAG 1.4.4 —el zoom de página lo satisface— pero sí de la promesa
+   * «Accesible» de una página cuya audiencia declarada incluye lectura fácil. Las 23 declaraciones de
+   * tamaño de este fichero son ahora relativas, y los rótulos que estaban clavados a 10 px en
+   * mayúsculas suben a 12: eran el suelo y rotulan los topes y las filas de las dos fichas.
+   */
+  font-size: 1rem;
+  line-height: 1.65;
+  font-synthesis-weight: none;
+}
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+  max-width: var(--medida);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  line-height: 1.18;
+  color: var(--petroleo);
+  text-wrap: balance;
+}
+
+a {
+  color: var(--accion);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--tinta);
+}
+
+/*
+ * Foco visible SIEMPRE, y con contraste propio. Quitar el outline por estética es la forma más rápida
+ * de dejar una página inutilizable con teclado, y esta va dirigida en parte a gente de accesibilidad.
+ */
+:focus-visible {
+  outline: 3px solid var(--accion);
+  outline-offset: 3px;
+}
+
+/*
+ * Sobre fondo petróleo el naranja de acción da 2.39:1, por debajo del 3:1 que WCAG 1.4.11 pide a un
+ * indicador de foco. El único enlace del pie se quedaba con un anillo que casi no se ve, justo para
+ * quien navega con teclado. `--accion-en-petroleo` da 5.43:1 y es el mismo color que esa banda ya usa
+ * para sus enlaces, así que no introduce un color nuevo: usa el que le toca.
+ */
+.banda--petroleo :focus-visible,
+.pie :focus-visible {
+  outline-color: var(--accion-en-petroleo);
+}
+
+/* --- Enlace de salto: invisible hasta que recibe foco ---------------------- */
+.saltar {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--petroleo);
+  color: var(--papel-en-petroleo);
+  padding: 14px 20px;
+  z-index: 10;
+  text-decoration: none;
+}
+
+.saltar:focus {
+  left: 0;
+}
+
+/*
+ * El enlace de salto se pinta en (0,0), así que si el puntero descansa ahí gana `a:hover` —que es más
+ * específico (0,1,1) que `.saltar` (0,1,0)— y el texto pasa a tinta sobre petróleo: de 12.06:1 a
+ * 1.12:1, un rectángulo oscuro con texto casi invisible. Lo reprodujo `qa` en frío moviendo el ratón.
+ * Condición estrecha, pero es el control de accesibilidad de una página cuya audiencia declarada
+ * incluye a gente de accesibilidad, y es el primer elemento que recibe foco.
+ */
+.saltar:hover,
+.saltar:focus:hover {
+  color: var(--papel-en-petroleo);
+}
+
+/* --- Filete superior de tres tramos. No es un degradado. ------------------- */
+.marca {
+  display: grid;
+  grid-template-columns: 5fr 2fr 3fr;
+  height: 8px;
+}
+
+.marca > :nth-child(1) {
+  background: var(--petroleo);
+}
+
+.marca > :nth-child(2) {
+  background: var(--accion-viva);
+}
+
+.marca > :nth-child(3) {
+  background: var(--petroleo-vivo);
+}
+
+/* --- Retícula de sección: columna de marcadores + columna de texto --------- */
+.seccion {
+  display: grid;
+  grid-template-columns: var(--margen-seccion) minmax(0, 640px);
+  gap: var(--gutter);
+  padding: 60px 96px;
+}
+
+.seccion--ancha {
+  grid-template-columns: var(--margen-seccion) minmax(0, 740px);
+}
+
+.seccion__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.banda--honda {
+  background: var(--arena-honda);
+  border-top: 1px solid var(--arena-borde);
+  border-bottom: 1px solid var(--arena-borde);
+}
+
+.banda--petroleo {
+  background: var(--petroleo);
+  color: var(--papel-en-petroleo);
+}
+
+.banda--petroleo h2 {
+  color: inherit;
+}
+
+/* --- Marcador de sección (§1, §2…) ---------------------------------------- */
+.marcador {
+  padding-top: 8px;
+}
+
+.marcador__num {
+  font-family: var(--display);
+  font-size: 1.875rem;
+  line-height: 1;
+  color: var(--petroleo-vivo);
+}
+
+.marcador__filete {
+  width: 34px;
+  height: 3px;
+  background: var(--petroleo-vivo);
+  margin: 10px 0;
+}
+
+.marcador__texto {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--petroleo-texto);
+}
+
+.banda--petroleo .marcador__num,
+.banda--petroleo .marcador__filete {
+  color: var(--accion-en-petroleo);
+  background-color: var(--accion-en-petroleo);
+}
+
+.banda--petroleo .marcador__num {
+  background: none;
+}
+
+.banda--petroleo .marcador__texto {
+  color: var(--suave-en-petroleo);
+}
+
+/* --- Cabecera -------------------------------------------------------------- */
+.cabecera__nombre {
+  font-family: var(--display);
+  font-size: clamp(3rem, 7vw, 4.75rem);
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  color: var(--petroleo);
+}
+
+.cabecera__lede {
+  font-family: var(--display);
+  font-size: clamp(1.375rem, 2.6vw, 1.6875rem);
+  line-height: 1.4;
+  max-width: 32ch;
+}
+
+.cabecera__entradilla {
+  color: var(--tinta-suave);
+  max-width: 58ch;
+}
+
+/* --- Conmutador de idioma -------------------------------------------------- */
+.idiomas {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 96px 0;
+}
+
+.idiomas a {
+  /* 64×36 a 390 px: por debajo del mínimo de 44. Los controles del §4 ya estaban bien; los dos que
+     fallaban estaban FUERA de `<main>`, que es justo donde nadie mira. Lo midió `qa`. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--petroleo-texto);
+  text-decoration-thickness: 1px;
+  padding: 8px 4px;
+}
+
+.idiomas a:hover {
+  color: var(--accion);
+}
+
+/* --- Los tres pasos -------------------------------------------------------- */
+.pasos {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* Va en la hoja y no en un `style=` inline: este fichero declara en su cabecera que todo color y
+     toda fuente salen de tokens, y dos atributos inline sueltos contradecían esa regla en el único
+     sitio donde nadie los buscaría. */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.paso {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  background: var(--arena);
+  padding: 20px 24px;
+  border-left: 4px solid var(--accion-viva);
+}
+
+.paso__num {
+  font-family: var(--display);
+  font-size: 2.5rem;
+  line-height: 0.9;
+  color: var(--accion-viva);
+}
+
+/* --- «Qué no es»: cuatro afirmaciones -------------------------------------- */
+.noes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 30px 40px;
+}
+
+.noes__punto {
+  border-top: 2px solid var(--accion-en-petroleo);
+  padding-top: 16px;
+}
+
+.noes__titulo {
+  font-weight: 600;
+  font-size: 1.0625rem;
+  margin-bottom: 8px;
+}
+
+.noes__cuerpo {
+  color: var(--suave-en-petroleo);
+  font-size: 0.9375rem;
+  max-width: none;
+}
+
+/* --- Los topes -------------------------------------------------------------- */
+.topes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  background: var(--arena-borde);
+}
+
+.tope {
+  background: var(--arena-honda);
+  padding: 22px 20px;
+}
+
+.tope__cifra {
+  font-family: var(--display);
+  font-size: 3.25rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--accion-viva);
+}
+
+.tope__etiqueta {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--petroleo-texto);
+  margin-top: 10px;
+}
+
+/* --- La bifurcación --------------------------------------------------------- */
+.bifurcacion__botones {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.boton {
+  font-family: var(--texto);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: 15px 24px;
+  min-height: 50px;
+  border-radius: 2px;
+  cursor: pointer;
+  line-height: 1.3;
+  text-align: left;
+  background: transparent;
+  color: var(--petroleo);
+  border: 2px solid var(--petroleo-vivo);
+  transition: background var(--dur-rapida) var(--ease), color var(--dur-rapida) var(--ease),
+    border-color var(--dur-rapida) var(--ease);
+}
+
+.boton[aria-expanded="true"] {
+  background: var(--accion);
+  color: var(--arena);
+  border-color: var(--accion);
+}
+
+/*
+ * El no elegido se atenúa: es el único sitio donde el movimiento informa.
+ *
+ * Atenuado no puede querer decir invisible. Con `--arena-borde` el contorno daba 1.26:1 sobre la banda
+ * honda y el botón dejaba de leerse como un control —fondo transparente, borde imperceptible—, que es
+ * precisamente lo que WCAG 1.4.11 prohíbe. `--borde-control` da 3.10:1 y sigue leyéndose como
+ * secundario frente al elegido, que va en naranja lleno.
+ */
+.bifurcacion[data-elegida] .boton[aria-expanded="false"] {
+  color: var(--tinta-suave);
+  border-color: var(--borde-control);
+}
+
+.ficha {
+  background: var(--arena);
+  border-top: 4px solid var(--accion-viva);
+  padding: 28px 30px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.ficha__intro {
+  font-size: 0.9375rem;
+}
+
+.ficha__filas {
+  display: grid;
+  grid-template-columns: 158px minmax(0, 1fr);
+  gap: 16px 24px;
+  font-size: 0.9375rem;
+}
+
+.ficha__etiqueta {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--petroleo-texto);
+  padding-top: 5px;
+}
+
+.ficha__codigo {
+  /*
+   * `pre-wrap` y no `pre`: a 390 px el bloque necesitaba 432 px y tenía 298, y se cortaba
+   * EXACTAMENTE en el nombre de la etiqueta que el mantenedor tiene que copiar literalmente. Tenía
+   * `overflow-x: auto`, así que había salida — pero sin barra visible en móvil no hay affordance, y
+   * una salida que nadie ve no es una salida. Son cuatro líneas cortas: envolver no cuesta nada y
+   * quita el corte de raíz. Lo capturó `qa`.
+   */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  background: var(--petroleo);
+  color: var(--papel-en-petroleo);
+  padding: 18px 20px;
+  line-height: 1.75;
+  overflow-x: auto;
+  border-left: 4px solid var(--petroleo-vivo);
+  margin: 0;
+}
+
+.ficha__accion {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.cta {
+  display: inline-block;
+  font-family: var(--texto);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: 15px 24px;
+  min-height: 50px;
+  background: var(--accion);
+  color: var(--arena);
+  text-decoration: none;
+  border-radius: 2px;
+}
+
+.cta:hover {
+  background: var(--petroleo);
+  color: var(--papel-en-petroleo);
+}
+
+.ficha__copia {
+  font-size: 0.875rem;
+  color: var(--tinta-suave);
+}
+
+.ficha__correo {
+  font-family: var(--mono);
+  background: var(--arena-honda);
+  padding: 4px 8px;
+  color: var(--petroleo-texto);
+}
+
+/* --- «Dónde estamos»: la única marca ocre ----------------------------------- */
+.estado {
+  border-left: 4px solid var(--ocre);
+  padding-left: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.estado h2 {
+  font-size: 1.8125rem;
+}
+
+/* --- Pie ---------------------------------------------------------------------- */
+.pie {
+  background: var(--petroleo);
+  color: var(--suave-en-petroleo);
+  padding: 32px 96px 36px;
+  font-size: 0.875rem;
+  display: flex;
+  gap: 26px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.pie a {
+  color: var(--accion-en-petroleo);
+  /* 191×23 a 390 px. Mismo motivo que el conmutador de idioma. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.pie a:hover {
+  color: var(--papel-en-petroleo);
+}
+
+/*
+ * Mejora progresiva de la bifurcación.
+ *
+ * SIN JavaScript las dos fichas se ven, abiertas, y los botones no aparecen: un botón que no hace nada
+ * es peor que no tenerlo. CON JavaScript los botones aparecen y las fichas se pliegan.
+ *
+ * La clase `js` la pone un script en el `<head>`, antes de pintar, para que no haya parpadeo. Es lo que
+ * permite que el contenido esté SIEMPRE en el HTML — que es también lo que hace que los tests de
+ * honestidad puedan leerlo sin ejecutar un navegador.
+ */
+.bifurcacion__botones {
+  display: none;
+}
+
+.js .bifurcacion__botones {
+  display: flex;
+}
+
+.js .ficha[hidden] {
+  display: none;
+}
+
+/* --- Móvil ---------------------------------------------------------------------- */
+@media (max-width: 860px) {
+  .seccion,
+  .seccion--ancha {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding: 36px 24px;
+  }
+
+  .idiomas,
+  .pie {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .marcador {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-top: 0;
+  }
+
+  .marcador__num {
+    font-size: 1.625rem;
+  }
+
+  .marcador__filete {
+    margin: 0;
+    width: 26px;
+  }
+
+  .noes {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+  }
+
+  .ficha__filas {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px 0;
+  }
+
+  .ficha__etiqueta {
+    padding-top: 12px;
+  }
+
+  .bifurcacion__botones {
+    flex-direction: column;
+  }
+
+  .js .bifurcacion__botones .boton,
+  .cta {
+    width: 100%;
+    min-height: 54px;
+  }
+
+  .ficha {
+    padding: 22px 20px 24px;
+  }
+
+  .paso {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px 18px;
+  }
+
+  .paso__num {
+    font-size: 1.75rem;
+  }
+
+  .tope {
+    padding: 16px 12px;
+  }
+
+  .tope__cifra {
+    font-size: 2.375rem;
+  }
+
+  .estado {
+    padding-left: 20px;
+  }
+}
+
+/*
+ * El aviso de que la dirección de contacto es un marcador.
+ *
+ * Va en ocre, el color que esta página reserva para «esto es un estado, no una acción» — el mismo del
+ * §5 «dónde estamos». No en naranja: el naranja significa que algo se puede pulsar, y aquí lo que se
+ * dice es justo lo contrario.
+ */
+.ficha__aviso {
+  display: block;
+  margin-top: 10px;
+  font-weight: 600;
+  color: var(--tinta);
+  border-left: 4px solid var(--ocre);
+  padding-left: 12px;
+  max-width: 58ch;
+}

@@ -20,7 +20,31 @@ export default [
     // nuestro y no se toca, así que tampoco se lintea con nuestras reglas. Su propio repo lo cubre.
     // Los `.json` no son código: ESLint los parsea como JS y un objeto suelto le parece una expresión
     // sin usar. `tsconfig.test.json` fue el primero que lo destapó.
-    ignores: ["dist/**", "node_modules/**", "coverage/**", ".claude/**", "**/*.json"],
+    //
+    // De `web/` se ignora lo GENERADO, no el paquete entero. La primera versión de este arreglo puso
+    // `web/**` y el verificador señaló que era demasiado ancho: dejaba los diccionarios, `config.ts`,
+    // los tests y los scripts de la web sin linter PARA SIEMPRE, cuando el problema era sólo el
+    // directorio que genera `astro sync`. Los `.astro` no los toca ESLint de todas formas (no están en
+    // sus extensiones por defecto y su gate es el linter de frontend + `check-astro-sinks`).
+    //
+    // `web/` es OTRO PAQUETE npm, con su propio gate (`web/npm run gate`: astro check + linter
+    // anti-slop de frontend + build + tests). Sin esta entrada, `npm run lint` de la raíz salía 1 en
+    // cuanto alguien construía la web: `astro sync` genera `web/.astro/*.d.ts` con `any` y un
+    // triple-slash reference, y el ratchet subido del preset los marca como error.
+    //
+    // Y el CI no lo veía: el job `gate` hace `npm ci` en la raíz y nunca ejecuta Astro, así que
+    // `web/.astro/` no existe allí. O sea el espejo de T-168 — allí verde en local e invisible al
+    // gate, aquí verde en el gate e imposible en local. Un gate cuyo color depende de si alguien ha
+    // corrido un build en OTRO paquete no es un gate. Lo cazó el verificador en RELE-3.
+    ignores: [
+      "dist/**",
+      "node_modules/**",
+      "coverage/**",
+      ".claude/**",
+      "web/.astro/**",
+      "web/dist/**",
+      "**/*.json",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

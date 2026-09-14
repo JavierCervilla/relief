@@ -1,0 +1,156 @@
+[
+  {
+    "id": "M1",
+    "what": "una métrica inventada en la `meta description` — lo que enseña un buscador y cualquier tarjeta social",
+    "file": "src/i18n/es.ts",
+    "from": "    descripcion:\n      \"Eliges una tarea de una organización que pidió ayuda,",
+    "to": "    descripcion:\n      \"Ya llevamos 1240 tareas completadas y 87 organizaciones a bordo. Eliges una tarea de una organización que pidió ayuda,"
+  },
+  {
+    "id": "M3",
+    "what": "una cifra de actividad en un `aria-label` — lo que oye un lector de pantalla",
+    "file": "src/i18n/es.ts",
+    "from": "    otroIdiomaAria: \"Read this page in English\",",
+    "to": "    otroIdiomaAria: \"Read this page in English — 1240 tasks done\","
+  },
+  {
+    "id": "M4",
+    "what": "una cifra en el cuerpo de un mailto, que además viaja percent-encoded",
+    "file": "src/i18n/es.ts",
+    "from": "          \"Quién firma el permiso por escrito:\",",
+    "to": "          \"Quién firma el permiso por escrito: (ya somos 42 voluntarios)\","
+  },
+  {
+    "id": "M6",
+    "what": "una métrica hecha sólo con dígitos que la lista blanca ANTERIOR permitía (10 y 3)",
+    "file": "src/i18n/es.ts",
+    "from": "      \"No hay voluntarios activos, ni tareas completadas, ni ninguna organización a bordo.",
+    "to": "      \"Ya hay 10 organizaciones a bordo y 3 voluntarios activos."
+  },
+  {
+    "id": "M2",
+    "what": "el nombre de una ONG real en el texto: el veto que ya existía (control)",
+    "file": "src/i18n/es.ts",
+    "from": "      \"Hay organizaciones con trabajo útil parado por falta de manos:",
+    "to": "      \"Hay organizaciones como Kiva con trabajo útil parado por falta de manos:"
+  },
+  {
+    "id": "M9",
+    "what": "el INGLÉS pierde la frase de honestidad y el castellano la conserva",
+    "file": "src/i18n/en.ts",
+    "from": "      \"There are no active volunteers, no completed tasks and no organisation on board. What there is: the software written, the rules decided, and this page looking for the first ones. I would rather say it here than let you find out later.\",\n",
+    "to": ""
+  },
+  {
+    "id": "M10",
+    "what": "el inglés pierde un PASO entero (elemento objeto dentro de un array)",
+    "file": "src/i18n/en.ts",
+    "from": "      {\n        titulo: \"You review it and you sign it.\",\n        cuerpo:\n          \"You confirm you have read the whole thing. Without that confirmation the work never leaves your computer.\",\n      },\n",
+    "to": ""
+  },
+  {
+    "id": "M13",
+    "what": "las fichas se sirven ya plegadas: sin JavaScript no se ve NINGUNA de las dos vías",
+    "file": "src/components/Landing.astro",
+    "from": "              <div class=\"ficha\" id={`ficha-${id}`} data-ficha={id}>",
+    "to": "              <div class=\"ficha\" id={`ficha-${id}`} data-ficha={id} hidden>"
+  },
+  {
+    "id": "M14",
+    "what": "sin JavaScript aparecen dos botones muertos: se borra la regla que los oculta",
+    "file": "src/styles/landing.css",
+    "from": ".bifurcacion__botones {\n  display: none;\n}\n\n.js .bifurcacion__botones {",
+    "to": ".js .bifurcacion__botones {"
+  },
+  {
+    "id": "M15",
+    "what": "el enlace de salto deja de apuntar a algo enfocable (Safari+VoiceOver no salta)",
+    "file": "src/components/Landing.astro",
+    "from": "id=\"contenido\" tabindex=\"-1\"",
+    "to": "id=\"contenido\""
+  },
+  {
+    "id": "M16",
+    "what": "desaparece la región principal: la página se queda sin <main>",
+    "file": "src/components/Landing.astro",
+    "from": "    <main>",
+    "to": "    <div>"
+  },
+  {
+    "id": "M17",
+    "what": "el borde del control atenuado vuelve al token de filete (1.26:1, deja de parecer un botón)",
+    "file": "src/styles/landing.css",
+    "from": "  border-color: var(--borde-control);",
+    "to": "  border-color: var(--arena-borde);"
+  },
+  {
+    "id": "M18",
+    "what": "el anillo de foco del pie vuelve al naranja de acción (2.39:1 sobre petróleo)",
+    "file": "src/styles/landing.css",
+    "from": "  outline-color: var(--accion-en-petroleo);",
+    "to": "  outline-color: var(--accion);"
+  },
+  {
+    "id": "M19",
+    "what": "la dirección del mailto deja de codificarse: vuelve la inyección de cabeceras",
+    "file": "src/i18n/index.ts",
+    "from": "  const direccion = encodeURIComponent(direccionCruda);",
+    "to": "  const direccion = direccionCruda;"
+  },
+  {
+    "id": "M20",
+    "what": "un origen de terceros en el CSS: las fuentes vuelven a cargarse de Google",
+    "file": "src/styles/landing.css",
+    "from": "/*\n * La landing.",
+    "to": "@import url(\"https://fonts.googleapis.com/css2?family=Archivo\");\n/*\n * La landing."
+  },
+  {
+    "id": "M21",
+    "what": "el aviso de que el correo es un marcador desaparece: las CTA quedan muertas y calladas",
+    "file": "src/components/Landing.astro",
+    "from": "                    {CORREO_ES_MARCADOR && <strong class=\"ficha__aviso\">{t.bifurcacion.avisoCorreo}</strong>}",
+    "to": ""
+  },
+  {
+    "id": "M22",
+    "what": "vuelve la frase ABSOLUTA del §2: «no nombra a nadie» mientras la página nombra a GitHub y Claude Code",
+    "file": "src/i18n/es.ts",
+    "from": "        titulo: \"No nombra a ningún participante sin permiso.\",",
+    "to": "        titulo: \"No nombra a nadie sin permiso.\","
+  },
+  {
+    "id": "M23",
+    "what": "la divulgación del §2 deja de mencionar a los terceros que la página sí nombra",
+    "file": "src/i18n/es.ts",
+    "from": "Sí se nombran Claude Code y GitHub, porque sin decir qué herramienta usa el voluntario y dónde vive el código esto no se entiende: no han autorizado nada, no participan y no lo respaldan.",
+    "to": "Y nadie más aparece aquí."
+  },
+  {
+    "id": "M24",
+    "what": "el veto de nombres vuelve a comparar grafías de display: `plenainclusion.org` lo atraviesa",
+    "file": "tests/vetos.ts",
+    "from": "    .replace(/[^a-z0-9]+/g, \"\");",
+    "to": "    .replace(/[^a-z0-9 ]+/g, \"\");"
+  },
+  {
+    "id": "M25",
+    "what": "vuelve el compromiso de plazo: una magnitud en letra sobre la capacidad de Relevo",
+    "file": "src/i18n/es.ts",
+    "from": "      \"Contesta una persona, no un formulario. No hay guardia: puede tardar.",
+    "to": "      \"Contesta una persona, normalmente en un par de días. Y ya somos cientos."
+  },
+  {
+    "id": "M26",
+    "what": "el tamaño base vuelve a px: la preferencia de letra del usuario muere en el `body`",
+    "file": "src/styles/landing.css",
+    "from": "  font-size: 1rem;\n  line-height: 1.65;",
+    "to": "  font-size: 16px;\n  line-height: 1.65;"
+  },
+  {
+    "id": "M27",
+    "what": "se borra `.saltar:hover`: el enlace de salto se vuelve ilegible con el puntero en (0,0)",
+    "file": "src/styles/landing.css",
+    "from": ".saltar:hover,\n.saltar:focus:hover {\n  color: var(--papel-en-petroleo);\n}",
+    "to": ".saltar:no-aplica {\n  color: var(--papel-en-petroleo);\n}"
+  }
+]
