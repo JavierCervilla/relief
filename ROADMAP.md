@@ -46,6 +46,9 @@ la primera persona interesada.
       decisión de que una suite verde sin mutantes no cuenta
 - [x] Chequeo determinista de sinks en los `.astro`, porque semgrep no tiene lenguaje Astro y el único
       fichero con markup quedaba fuera del SAST
+- [x] **Pase adversario y QA con navegador**: siete hallazgos, los siete arreglados y con trinquete.
+      Dos eran la página contradiciéndose (nombraba a terceros bajo una promesa absoluta; publicaba un
+      compromiso de plazo que no podemos respaldar) y tres eran accesibilidad real medida en Chromium
 
 ### Lo que la landing NO hace todavía
 

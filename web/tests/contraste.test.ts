@@ -162,6 +162,16 @@ describe("y la hoja usa esos tokens donde la medición dice que hacen falta", ()
     );
   });
 
+  it("el enlace de salto conserva su color con el puntero encima", () => {
+    // Se pinta en (0,0), así que si el ratón descansa ahí gana `a:hover` —más específico (0,1,1) que
+    // `.saltar` (0,1,0)— y el contraste cae de 12.06:1 a 1.12:1: un rectángulo oscuro con texto casi
+    // invisible. Lo reprodujo `qa` en frío moviendo el ratón, y ningún assert de geometría lo veía.
+    const cuerpo = regla(".saltar:hover");
+    expect(cuerpo).toContain("var(--papel-en-petroleo)");
+    // Y que ese color siga siendo legible sobre el fondo del propio enlace.
+    expect(contraste("papel-en-petroleo", "petroleo")).toBeGreaterThanOrEqual(4.5);
+  });
+
   it("el foco sobre banda petróleo usa --accion-en-petroleo", () => {
     const cuerpo = regla(".banda--petroleo :focus-visible");
     expect(cuerpo).toContain("var(--accion-en-petroleo)");

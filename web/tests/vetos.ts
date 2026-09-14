@@ -13,10 +13,56 @@
 export const NOMBRES_VETADOS: readonly string[] = [
   "Kiva",
   "Plena Inclusión",
-  "Plena Inclusion",
   "Cochrane",
   "Ghostty",
 ];
+
+/**
+ * Los nombres propios que la página **sí** dice, cada uno con por qué se le permite.
+ *
+ * Existe por la asimetría que encontró `qa-adversario`: `NOMBRES_VETADOS` es una **lista negra** —un
+ * oráculo de reconocimiento, sólo ve lo que ya está escrito en él— mientras que `CIFRAS_DECLARADAS`
+ * es una **lista blanca**, donde un número nuevo se pone rojo por ser nuevo. Dos promesas simétricas
+ * defendidas con polaridades opuestas a cien líneas de distancia.
+ *
+ * Y no era teórico: la página **nombraba a GitHub y a Claude Code** tres líneas debajo de la frase que
+ * decía que no nombra a nadie sin permiso. No hizo falta mutar nada — la promesa ya estaba incumplida.
+ * Lo que cedió fue la frase, porque era absoluta y la página no lo es: omitir la forja y la
+ * herramienta haría la página incomprensible, y decir «no nombro a nadie» mientras los nombras es
+ * exactamente el tipo de afirmación de más que este proyecto entero intenta no cometer.
+ *
+ * El invariante que sostiene el test: **si un nombre de aquí aparece en la página, la divulgación del
+ * §2 tiene que aparecer también.** Nombrar y explicar por qué se nombra van juntos o no van.
+ */
+export const NOMBRES_PERMITIDOS: ReadonlyMap<string, string> = new Map([
+  ["Claude Code", "la herramienta en la que el voluntario ejecuta la tarea; sin nombrarla no se entiende el modo pull manual"],
+  ["Claude", "aparece como parte de «Claude Code» y en «una suscripción a Claude»"],
+  ["GitHub", "la forja donde vive el código de Relevo, enlazada en el pie"],
+  ["Relevo", "el propio proyecto"],
+  ["AGPL", "la licencia"],
+]);
+
+/**
+ * Normaliza un texto para comparar NOMBRES: sin tildes, sin mayúsculas y sin separadores.
+ *
+ * La versión anterior comparaba grafías de display, y `qa-adversario` señaló que la forma en que de
+ * verdad se nombra a una organización en una web es un enlace. Cuatro de los cinco nombres vetados son
+ * de una palabra y sobrevivían al encoding; el único de dos —«Plena Inclusión», que es exactamente la
+ * audiencia de la ruta en castellano— era el único cuyo dominio, handle y slug pasaban limpios:
+ *
+ *     plenainclusion.org · @PlenaInclusion · /casos/plena-inclusion/ · «Plena  Inclusión»
+ *
+ * Lo que lo agrava es que la normalización SÍ se había considerado: la lista traía «Plena Inclusion»
+ * sin tilde. Se normalizó el diacrítico y no el separador — y el separador es justo el que se pierde
+ * al escribir una URL. Normalizando los dos, esa entrada duplicada sobra y se ha quitado.
+ */
+export function normalizarNombre(texto: string): string {
+  return texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
 
 /**
  * El oráculo de las cifras: **por cifra citada, con su cuenta y su motivo**.
@@ -118,4 +164,36 @@ export function discrepanciasDeCifras(texto: string): string[] {
     if (!vistas.has(cifra)) fallos.push(`«${cifra}» se declaró (${motivo}) y ya no aparece: ¿sobra?`);
   }
   return fallos.sort();
+}
+
+/**
+ * Cantidades escritas EN LETRA, que el oráculo de dígitos no puede ver.
+ *
+ * El docstring de `CIFRAS_DECLARADAS` presentaba esto como un límite hipotético — «también pasa un
+ * número escrito en letra (*una docena de organizaciones*)» — y `qa-adversario` demostró que ya estaba
+ * en uso: la página publicaba **tres** cuantificadores en letra, uno de ellos sobre Relevo mismo
+ * («contesta una persona, normalmente en un par de días», un compromiso de capacidad publicado dos
+ * párrafos después de «no hay voluntarios activos»). Ese se ha retirado del texto.
+ *
+ * Un límite documentado que ya está en uso en producción no es un límite: es una excepción sin
+ * declarar. Así que se declaran, con el mismo mecanismo que los dígitos.
+ *
+ * El vocabulario es corto a propósito: sólo palabras de MAGNITUD, las que podrían expresar volumen de
+ * actividad. «dos permisos» o «las dos vías» son estructura de la página, no una cifra, y meterlas
+ * aquí convertiría el gate en ruido — que es el camino más corto a que alguien lo relaje.
+ */
+export const MAGNITUDES_EN_LETRA =
+  /\b(docenas?|decenas?|cientos|centenares|miles|mill[oó]n(?:es)?|dozens?|hundreds|thousands|millions?)\b/gi;
+
+/** Frases donde una magnitud en letra es legítima, con su motivo. */
+export const MAGNITUDES_DECLARADAS: ReadonlyMap<string, string> = new Map([
+  ["más de dos millones de pull requests", "volumen del estudio de 2026 que se cita"],
+  ["more than two million pull requests", "idem, en inglés"],
+]);
+
+/** Magnitudes en letra que no están dentro de una frase declarada. */
+export function magnitudesSinDeclarar(texto: string): string[] {
+  let resto = texto.replace(/\s+/g, " ");
+  for (const frase of MAGNITUDES_DECLARADAS.keys()) resto = resto.split(frase).join(" ");
+  return [...new Set(resto.match(MAGNITUDES_EN_LETRA) ?? [])].map((m) => m.toLowerCase());
 }

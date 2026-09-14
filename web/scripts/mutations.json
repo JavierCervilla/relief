@@ -110,5 +110,47 @@
     "file": "src/components/Landing.astro",
     "from": "                    {CORREO_ES_MARCADOR && <strong class=\"ficha__aviso\">{t.bifurcacion.avisoCorreo}</strong>}",
     "to": ""
+  },
+  {
+    "id": "M22",
+    "what": "vuelve la frase ABSOLUTA del §2: «no nombra a nadie» mientras la página nombra a GitHub y Claude Code",
+    "file": "src/i18n/es.ts",
+    "from": "        titulo: \"No nombra a ningún participante sin permiso.\",",
+    "to": "        titulo: \"No nombra a nadie sin permiso.\","
+  },
+  {
+    "id": "M23",
+    "what": "la divulgación del §2 deja de mencionar a los terceros que la página sí nombra",
+    "file": "src/i18n/es.ts",
+    "from": "Sí se nombran Claude Code y GitHub, porque sin decir qué herramienta usa el voluntario y dónde vive el código esto no se entiende: no han autorizado nada, no participan y no tienen relación con Relevo.",
+    "to": "Y nadie más aparece aquí."
+  },
+  {
+    "id": "M24",
+    "what": "el veto de nombres vuelve a comparar grafías de display: `plenainclusion.org` lo atraviesa",
+    "file": "tests/vetos.ts",
+    "from": "    .replace(/[^a-z0-9]+/g, \"\");",
+    "to": "    .replace(/[^a-z0-9 ]+/g, \"\");"
+  },
+  {
+    "id": "M25",
+    "what": "vuelve el compromiso de plazo: una magnitud en letra sobre la capacidad de Relevo",
+    "file": "src/i18n/es.ts",
+    "from": "      \"Contesta una persona, no un formulario. Somos pocos y no hay guardia: puede tardar.",
+    "to": "      \"Contesta una persona, normalmente en un par de días. Y ya somos cientos."
+  },
+  {
+    "id": "M26",
+    "what": "el tamaño base vuelve a px: la preferencia de letra del usuario muere en el `body`",
+    "file": "src/styles/landing.css",
+    "from": "  font-size: 1rem;\n  line-height: 1.65;",
+    "to": "  font-size: 16px;\n  line-height: 1.65;"
+  },
+  {
+    "id": "M27",
+    "what": "se borra `.saltar:hover`: el enlace de salto se vuelve ilegible con el puntero en (0,0)",
+    "file": "src/styles/landing.css",
+    "from": ".saltar:hover,\n.saltar:focus:hover {\n  color: var(--papel-en-petroleo);\n}",
+    "to": ".saltar:no-aplica {\n  color: var(--papel-en-petroleo);\n}"
   }
 ]

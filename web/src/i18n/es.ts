@@ -70,9 +70,9 @@ export const es: Copy = {
           "Relevo no tiene cuenta en tu forja ni permiso de escritura en tu repositorio. Si algo llega, te lo manda una persona, con su nombre y su firma.",
       },
       {
-        titulo: "No nombra a nadie sin permiso.",
+        titulo: "No nombra a ningún participante sin permiso.",
         cuerpo:
-          "Ninguna organización aparece en esta página hasta que lo ha autorizado por escrito. Empezando por el hecho de que, hoy, no hay ninguna.",
+          "Ninguna ONG ni proyecto aparece aquí como participante hasta que lo autoriza por escrito — empezando por el hecho de que, hoy, no hay ninguno. Sí se nombran Claude Code y GitHub, porque sin decir qué herramienta usa el voluntario y dónde vive el código esto no se entiende: no han autorizado nada, no participan y no tienen relación con Relevo.",
       },
     ],
   },
@@ -191,7 +191,7 @@ export const es: Copy = {
     titulo: "No hay piloto todavía. Estás leyendo el principio.",
     parrafos: [
       "No hay voluntarios activos, ni tareas completadas, ni ninguna organización a bordo. Lo que hay es el software escrito, las reglas decididas y esta página buscando a los primeros. Prefiero decirlo aquí que dejar que lo descubras luego.",
-      "Contesta una persona, normalmente en un par de días. Si lo que has leído no te encaja, decírmelo también me sirve — y bastante.",
+      "Contesta una persona, no un formulario. Somos pocos y no hay guardia: puede tardar. Si lo que has leído no te encaja, decírmelo también me sirve — y bastante.",
     ],
   },
 

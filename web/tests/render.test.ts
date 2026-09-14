@@ -19,7 +19,13 @@ import { en } from "../src/i18n/en.js";
 import { es } from "../src/i18n/es.js";
 import { construirMailto } from "../src/i18n/index.js";
 
-import { NOMBRES_VETADOS, discrepanciasDeCifras } from "./vetos.js";
+import {
+  NOMBRES_PERMITIDOS,
+  NOMBRES_VETADOS,
+  discrepanciasDeCifras,
+  magnitudesSinDeclarar,
+  normalizarNombre,
+} from "./vetos.js";
 
 const DIST = new URL("../dist/", import.meta.url).pathname;
 
@@ -130,10 +136,14 @@ describe("ninguna organización real aparece en la página publicada", () => {
     it(`${codigo}: el HTML entero está limpio de nombres vetados`, () => {
       // Sobre el HTML COMPLETO, no sobre el texto visible: un nombre escondido en un `alt`, en un
       // `title` o en un comentario también es una afirmación pública.
-      const fuente = (html[codigo] ?? "").toLowerCase();
+      // Normalizado: sin tildes, sin mayúsculas y SIN SEPARADORES, porque la forma en que de verdad
+      // se nombra a una organización en una web es un enlace — `plenainclusion.org`,
+      // `@PlenaInclusion`, `/casos/plena-inclusion/`. Comparar grafías de display dejaba pasar las
+      // cuatro. Lo encontró `qa-adversario`.
+      const fuente = normalizarNombre(html[codigo] ?? "");
       for (const nombre of NOMBRES_VETADOS) {
         expect(fuente, `«${nombre}» aparece en la página ${codigo}`).not.toContain(
-          nombre.toLowerCase(),
+          normalizarNombre(nombre),
         );
       }
     });
@@ -152,6 +162,62 @@ describe("ninguna organización real aparece en la página publicada", () => {
       }
     });
   }
+});
+
+describe("si la página nombra a alguien, dice por qué lo nombra", () => {
+  // El invariante que cierra la asimetría entre las dos promesas: el veto de nombres era una LISTA
+  // NEGRA (sólo ve lo que ya está escrito en ella) y el de cifras una LISTA BLANCA (un número nuevo se
+  // pone rojo por ser nuevo). La página nombraba a GitHub y a Claude Code tres líneas debajo de la
+  // frase que decía que no nombra a nadie sin permiso — y no hizo falta mutar nada para verlo.
+  for (const { codigo, copy } of PAGINAS) {
+    it(`${codigo}: cada nombre permitido viene con su divulgación en el §2`, () => {
+      const fuente = normalizarNombre(html[codigo] ?? "");
+      const divulgacion = copy.queNoEs.puntos[3]?.cuerpo ?? "";
+      const presentes = [...NOMBRES_PERMITIDOS.keys()].filter((n) =>
+        fuente.includes(normalizarNombre(n)),
+      );
+      expect(presentes.length, "esperaba que la página nombrara algo").toBeGreaterThan(0);
+      expect(
+        textoVisible(html[codigo] ?? ""),
+        `la página nombra ${presentes.join(", ")} y no publica la divulgación del §2`,
+      ).toContain(divulgacion);
+      // Y la divulgación tiene que nombrar de verdad a los dos que no son nuestros.
+      for (const ajeno of ["Claude Code", "GitHub"]) {
+        expect(normalizarNombre(divulgacion), `la divulgación no menciona ${ajeno}`).toContain(
+          normalizarNombre(ajeno),
+        );
+      }
+
+      // El TITULAR también afirma, y es lo que lee quien pasa el ojo por encima sin entrar en el
+      // cuerpo. La batería lo destapó: restaurar «No nombra a nadie sin permiso» dejando el cuerpo
+      // correcto no ponía rojo nada, y esa frase vuelve a ser absoluta con GitHub tres líneas abajo.
+      const titular = copy.queNoEs.puntos[3]?.titulo ?? "";
+      expect(
+        titular,
+        `el titular del §2 vuelve a ser absoluto mientras la página nombra ${presentes.join(", ")}`,
+      ).not.toMatch(/no nombra a nadie|names nobody|names no one/i);
+    });
+  }
+});
+
+describe("ninguna magnitud en letra sin declarar", () => {
+  // El oráculo de dígitos no ve «una docena de organizaciones». Se presentaba como límite hipotético y
+  // ya estaba en uso: la página publicaba tres cuantificadores en letra, uno de ellos un compromiso de
+  // capacidad de Relevo. Un límite documentado que ya está en producción no es un límite.
+  for (const { codigo } of PAGINAS) {
+    it(`${codigo}: sólo las magnitudes declaradas, con su motivo`, () => {
+      expect(
+        magnitudesSinDeclarar(textoVisible(html[codigo] ?? "")),
+        `magnitud en letra sin declarar en ${codigo}: decláralas en MAGNITUDES_DECLARADAS con su motivo`,
+      ).toEqual([]);
+    });
+  }
+
+  it("sabe ponerse rojo con el ejemplo que el propio docstring usaba", () => {
+    expect(magnitudesSinDeclarar("Ya trabajamos con una docena de organizaciones.")).toEqual([
+      "docena",
+    ]);
+  });
 });
 
 describe("no hay ni una cifra de actividad: no existe ninguna que sea verdad", () => {

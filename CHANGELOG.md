@@ -5,6 +5,53 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No publicado]
 
+### Corregido — el pase adversario y el QA: siete hallazgos, y dos eran la página contradiciéndose
+
+**La página nombraba a GitHub y a Claude Code tres líneas debajo de la frase que decía que no nombra a
+nadie sin permiso.** No hizo falta mutar nada: la promesa ya estaba incumplida. De las dos partes cedió
+**la frase**, porque era absoluta y la página no lo es — omitir la forja y la herramienta la haría
+incomprensible, y decir «no nombro a nadie» nombrándolos es la afirmación de más que este proyecto
+entero intenta no cometer. Ahora promete lo que puede sostener (ningún *participante* sin permiso) y
+**declara en el propio §2** quiénes se nombran y que no han autorizado nada.
+
+Detrás había una asimetría estructural: `NOMBRES_VETADOS` era una **lista negra** —un oráculo de
+reconocimiento, sólo ve lo que ya está escrito en él— mientras `CIFRAS_DECLARADAS` era una **lista
+blanca**. Dos promesas simétricas defendidas con polaridades opuestas a cien líneas de distancia. El
+invariante nuevo las une: **si un nombre aparece, la divulgación tiene que aparecer también**.
+
+**«Contesta una persona, normalmente en un par de días» era un compromiso de capacidad** publicado dos
+párrafos después de «no hay voluntarios activos». Retirado: ahora dice «somos pocos y no hay guardia:
+puede tardar», que es verdad y sigue siendo útil. Y las magnitudes en letra que sí quedan (las del
+estudio) pasan a estar **declaradas con su motivo**, como los dígitos — un límite documentado que ya
+estaba en uso en producción no es un límite, es una excepción sin declarar.
+
+**El veto de nombres perdía el separador.** Cuatro de los cinco nombres son de una palabra y
+sobrevivían al encoding; el único de dos —«Plena Inclusión», que es *exactamente* la audiencia de la
+ruta en castellano— era el único cuyo dominio, handle y slug lo atravesaban limpios. Lo que lo agrava:
+la lista traía la variante sin tilde, o sea que la normalización **sí se había considerado** — se
+normalizó el diacrítico y no el separador, y el separador es el que se pierde al escribir una URL.
+
+**La preferencia de tamaño de letra del navegador moría en `body { font-size: 16px }`.** Medido con
+`Page.setFontSizes`, no deducido: con la preferencia a 32 px el cuerpo seguía en 16 y los rótulos en
+10. Las 23 declaraciones son ahora relativas, y los rótulos que estaban clavados a 10 px en mayúsculas
+suben a 12. Verificado después: 16→16/12, 24→24/18, 32→32/24.
+
+**Tres hallazgos de QA, los tres medidos y arreglados:**
+- El **enlace de salto** se volvía ilegible si el puntero descansaba en la esquina superior izquierda:
+  se pinta en (0,0) y ahí gana `a:hover`, más específico que `.saltar`. De 12.06:1 a 1.12:1. Ningún
+  assert de geometría lo veía.
+- **Objetivos táctiles** por debajo de 44 px, los dos **fuera de `<main>`** — que es donde nadie mira.
+  64×36 y 191×23 → 65×44 y 191×44.
+- El **bloque de código se cortaba a 390 px justo en el nombre de la etiqueta** que el mantenedor tiene
+  que copiar literalmente. Tenía `overflow-x: auto`, pero sin barra visible en móvil no hay
+  *affordance*: una salida que nadie ve no es una salida.
+
+Los cuatro recorridos adversarios se quedan como **trinquete** (19 asertos), reescritos para aseverar
+la ausencia del fallo en vez de su presencia. Y seis mutaciones nuevas protegen los arreglos — dos de
+ellas sobrevivieron al primer intento: restaurar el **titular** absoluto del §2 (mi test miraba el
+cuerpo, y el titular es lo que lee quien pasa el ojo por encima) y borrar `.saltar:hover`.
+
+
 ### Corregido — la ronda del Guardián sobre la landing (4 bloqueantes + 5 de seguridad)
 
 El `verificador` rompió la implementación catorce veces y **seis mutaciones sobrevivieron** con la

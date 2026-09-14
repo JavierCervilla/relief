@@ -73,9 +73,9 @@ export const en: Copy = {
           "Relevo has no account on your forge and no write access to your repository. If something reaches you, a person sent it, under their own name and their own signature.",
       },
       {
-        titulo: "It names nobody without permission.",
+        titulo: "It names no participant without permission.",
         cuerpo:
-          "No organisation appears on this page until it has authorised that in writing. Starting with the fact that, today, there isn't one.",
+          "No charity or project appears here as a participant until it authorises that in writing — starting with the fact that, today, there is none. Claude Code and GitHub are named, because without saying which tool the volunteer uses and where the code lives none of this makes sense: they have authorised nothing, they take no part, and they have no relationship with Relevo.",
       },
     ],
   },
@@ -194,7 +194,7 @@ export const en: Copy = {
     titulo: "There is no pilot yet. You are reading the beginning.",
     parrafos: [
       "There are no active volunteers, no completed tasks and no organisation on board. What there is: the software written, the rules decided, and this page looking for the first ones. I would rather say it here than let you find out later.",
-      "A person answers, usually within a couple of days. If what you have read doesn't fit you, hearing that helps too — quite a lot, in fact.",
+      "A person answers, not a form. We are few and nobody is on call: it may take a while. If what you have read doesn't fit you, hearing that helps too — quite a lot, in fact.",
     ],
   },
 
