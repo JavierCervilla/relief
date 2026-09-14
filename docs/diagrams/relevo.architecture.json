@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Relevo — voluntariado asistido por IA",
+    "subtitle": "La inferencia ocurre en la sesión del voluntario; Relevo nunca ve una credencial de modelo",
+    "quality_profile": "showcase",
+    "viewBox": [1000, 640],
+    "views": [
+      {
+        "id": "camino-tarea",
+        "label": "Camino de una tarea",
+        "focus": ["ong", "relevo", "cola", "claude-code", "voluntario"],
+        "note": "La ONG publica, el voluntario elige y reclama, trabaja en su sesión y envía."
+      },
+      {
+        "id": "frontera-inferencia",
+        "label": "Dónde ocurre la inferencia",
+        "focus": ["voluntario", "claude-code", "modelo", "relevo"],
+        "note": "No hay arista de Relevo al modelo. Esa ausencia es el diseño, no un olvido."
+      }
+    ]
+  },
+  "components": [
+    { "id": "ong", "type": "external", "label": "ONG", "sublabel": "Publica y revisa", "pos": [500, 110], "size": [150, 60] },
+    { "id": "goldset", "type": "database", "label": "Gold set", "sublabel": "Respuestas de referencia", "pos": [730, 110], "size": [150, 60] },
+    { "id": "voluntario", "type": "external", "label": "Voluntario", "sublabel": "Elige y revisa", "pos": [40, 300], "size": [150, 60] },
+    { "id": "claude-code", "type": "frontend", "label": "Claude Code", "sublabel": "Sesion del voluntario", "brand": "claude", "pos": [270, 300], "size": [150, 60] },
+    { "id": "relevo", "type": "backend", "label": "Relevo MCP", "sublabel": "Las cinco tools", "pos": [500, 300], "size": [150, 60] },
+    { "id": "cola", "type": "database", "label": "Cola de tareas", "sublabel": "Claims y envios", "pos": [730, 300], "size": [150, 60] },
+    { "id": "modelo", "type": "external", "label": "Modelo", "sublabel": "Cuota del voluntario", "pos": [270, 490], "size": [150, 60] }
+  ],
+  "boundaries": [
+    { "kind": "security-group", "label": "Maquina del voluntario", "wraps": ["voluntario", "claude-code"] },
+    { "kind": "region", "label": "Relevo", "wraps": ["relevo", "cola"] }
+  ],
+  "connections": [
+    { "id": "voluntario-claude", "from": "voluntario", "to": "claude-code", "label": "elige", "variant": "emphasis" },
+    { "id": "claude-relevo", "from": "claude-code", "to": "relevo", "label": "MCP" },
+    { "id": "relevo-cola", "from": "relevo", "to": "cola", "label": "claims" },
+    { "id": "ong-relevo", "from": "ong", "to": "relevo", "label": "publica", "labelDy": 24 },
+    { "id": "goldset-cola", "from": "goldset", "to": "cola", "label": "compara", "variant": "dashed", "labelDy": 24 },
+    { "id": "claude-modelo", "from": "claude-code", "to": "modelo", "label": "inferencia", "variant": "emphasis", "labelDy": 24 }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "La flecha que no existe",
+      "items": [
+        "Ninguna arista sale de Relevo hacia el modelo",
+        "El servidor no recibe ni enruta credenciales",
+        "Ceder cuota viola los terminos; esto no la cede"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Los limites viven en el servidor",
+      "items": [
+        "Tres tareas por sesion, diez al dia",
+        "El claim caduca a los treinta minutos",
+        "Una skill se edita; un invariante testeado no"
+      ]
+    }
+  ]
+}

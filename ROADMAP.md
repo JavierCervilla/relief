@@ -1,17 +1,20 @@
 # Roadmap — Relevo
 
-Estado a 2026-09-14. Lo que está marcado está **en `main` y probado**, no "hecho en una rama".
+Estado a 2026-09-14. Una casilla se marca en el **mismo PR** que trae el trabajo, así que marcado quiere
+decir *probado y de camino a `main`*, nunca "lo tengo casi".
 
-## Fase 0 — Esqueleto (RELE-1) · en curso
+## Fase 0 — Esqueleto (RELE-1) · completa
 
-- [ ] Contrato de tarea en Zod: `Task`, `Claim`, `Submission` y la E/S de las cinco tools
-- [ ] Store en memoria tras la interfaz `TaskStore` (la persistencia será otra implementación, no un rediseño)
-- [ ] Las cinco tools MCP: `list_tasks`, `get_task`, `claim_task`, `release_task`, `submit_result`
-- [ ] Fixtures de las tres ONGs candidatas (Kiva, Plena Inclusión, Cochrane Crowd)
-- [ ] Tests de los cinco invariantes del claim (unicidad, TTL, cuota, submit sobre claim vivo, contenido como dato)
-- [ ] Gate anti-slop + gate de seguridad, mordiendo en CI
-- [ ] Skill del voluntario (`skills/relevo/`) en modo pull manual
-- [ ] Diagrama de arquitectura en `docs/diagrams/`
+- [x] Contrato de tarea en Zod: `Task`, `Claim`, `Submission` y la E/S de las cinco tools
+- [x] Store en memoria tras la interfaz `TaskStore` (la persistencia será otra implementación, no un rediseño)
+- [x] Las cinco tools MCP: `list_tasks`, `get_task`, `claim_task`, `release_task`, `submit_result`
+- [x] Fixtures de las tres ONGs candidatas (Kiva, Plena Inclusión, Cochrane Crowd)
+- [x] Tests de los cinco invariantes del claim (unicidad, TTL, cuota, submit sobre claim vivo, contenido como dato)
+- [x] Batería de mutaciones: cada invariante visto en rojo, y la batería demostrando que sabe ponerse roja
+- [x] Smoke del binario construido (arranca por stdio y anuncia las cinco tools)
+- [x] Gate anti-slop + gate de seguridad, mordiendo en CI
+- [x] Skill del voluntario (`skills/relevo/`) en modo pull manual
+- [x] Diagrama de arquitectura en `docs/diagrams/`
 
 ## Fase 1 — Que una ONG diga que sí
 
