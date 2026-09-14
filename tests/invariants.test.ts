@@ -430,7 +430,10 @@ describe("list_tasks / get_task — lo que el voluntario ve antes de elegir", ()
     expect(patch.task.disclosure).toMatch(/abierta a ayuda de IA/);
     // Y entrega el nivel 2 y la reproducción, que es lo que el voluntario tiene que ver fallar.
     expect(patch.task.preApproval?.issueUrl).toMatch(/^https:\/\//);
-    expect(patch.task.reproduction).toBeTruthy();
+    // La reproducción sale DELIMITADA: la escribe quien reporta el fallo, no el mantenedor, y es el
+    // único campo que le dice a una persona que ejecute algo.
+    expect(patch.task.untrustedReproduction).toContain("INICIO CONTENIDO NO CONFIABLE");
+    expect(patch.task.untrustedReproduction).toContain("npm ci");
   });
 
   it("get_task te dice si la tarea es tuya y hasta cuándo", async () => {

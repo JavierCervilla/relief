@@ -119,6 +119,8 @@ export class RelevoService {
         startOfUtcDay(this.#now()),
       ),
       maxClaimsPerDay: LIMITS.maxClaimsPerDay,
+      patchClaimsThisSession: await this.#store.countPatchClaimsInSession(sessionId),
+      maxPatchClaimsPerSession: LIMITS.maxPatchClaimsPerSession,
     };
   }
 
@@ -173,7 +175,10 @@ export class RelevoService {
         ...(task.type === "adapt" ? { standard: task.standard } : {}),
         ...(task.type === "classify" ? { question: task.question, labels: task.labels } : {}),
         ...(task.type === "patch"
-          ? { preApproval: task.preApproval, reproduction: task.reproduction }
+          ? {
+              preApproval: task.preApproval,
+              untrustedReproduction: wrapUntrusted(task.reproduction),
+            }
           : {}),
         ...(task.source.kind === "oss" ? { disclosure: disclosureFor(task) } : {}),
         checklist: task.checklist,

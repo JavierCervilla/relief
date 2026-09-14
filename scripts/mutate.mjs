@@ -28,6 +28,18 @@ if (selected.length === 0) {
   process.exit(2);
 }
 
+// La suite tiene que estar VERDE antes de empezar. Si no, cada mutación se apunta como "cazada"
+// porque la suite sale roja — por el fallo que ya había, no por la mutación. Pasó: M41 se reportó
+// cazada con un test en rojo por otro motivo, y sobrevivía. Un verificador que no se verifica a sí
+// mismo miente en la dirección cómoda.
+{
+  const baseline = spawnSync("npx", ["vitest", "run", "--silent"], { cwd: ROOT, encoding: "utf8" });
+  if (baseline.status !== 0) {
+    console.error("la suite ya está ROJA sin mutar: arréglala antes, o cada mutación saldrá 'cazada' por el fallo que ya hay");
+    process.exit(2);
+  }
+}
+
 const survivors = [];
 
 for (const mutation of selected) {

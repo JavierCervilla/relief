@@ -16,6 +16,7 @@ import { describe, expect, it } from "vitest";
 import {
   LIMITS,
   PatchResultSchema,
+  RepoSchema,
   TaskSourceSchema,
   TaskSpecSchema,
   type TaskSpec,
@@ -139,5 +140,61 @@ describe("el tope de parches es más bajo que el de tareas", () => {
   it("uno por sesión, y menos que el tope general", () => {
     expect(LIMITS.maxPatchClaimsPerSession).toBe(1);
     expect(LIMITS.maxPatchClaimsPerSession).toBeLessThan(LIMITS.maxClaimsPerSession);
+  });
+});
+
+describe("una URL de consentimiento no puede mentirle a quien la lee", () => {
+  function conOptIn(url: string): unknown {
+    const task = structuredClone(PATCH);
+    (task["source"] as typeof OSS_SOURCE).optIn.url = url;
+    return task;
+  }
+
+  it("rechaza userinfo: `https://github.com@evil.example/` se lee como GitHub y no lo es", () => {
+    expect(TaskSpecSchema.safeParse(conOptIn("https://github.com@evil.example/issues/1")).success).toBe(
+      false,
+    );
+  });
+
+  it("rechaza credenciales embebidas", () => {
+    expect(
+      TaskSpecSchema.safeParse(conOptIn("https://user:token@evil.example/relevo-demo/docs-es/issues/1"))
+        .success,
+    ).toBe(false);
+  });
+
+  it("rechaza caracteres de control: los escapes ANSI reescriben el terminal de quien revisa", () => {
+    const conEscape = `https://github.com/relevo-demo/docs-es/issues/1${String.fromCharCode(27)}[2J`;
+    expect(TaskSpecSchema.safeParse(conOptIn(conEscape)).success).toBe(false);
+  });
+
+  it("exige que el opt-in viva EN el repo que dice autorizar", () => {
+    // Presencia del consentimiento no es coherencia del consentimiento: sin esto, `repo:
+    // "torvalds/linux"` con un opt-in alojado en otro sitio pasa, y esa es justo la comprobacion que un
+    // humano no hace.
+    expect(
+      TaskSpecSchema.safeParse(conOptIn("https://github.com/otro/proyecto/issues/1")).success,
+    ).toBe(false);
+    expect(
+      TaskSpecSchema.safeParse(conOptIn("https://github.com/relevo-demo/docs-es/issues/9")).success,
+    ).toBe(true);
+  });
+
+  it("el repositorio no admite `..` ni segmentos que empiecen por guion", () => {
+    // Se prueba `RepoSchema` SOLO, a propósito. A través de la tarea entera, el cruce opt-in↔repo
+    // rechazaba estos valores primero y el test pasaba por un motivo distinto del que anuncia: lo
+    // destapó la mutación M40 sobreviviendo con el test en verde.
+    for (const repo of ["../..", "a/..", "-rf/--no-preserve", "./x", "a/-b"]) {
+      expect(RepoSchema.safeParse(repo).success).toBe(false);
+    }
+    expect(RepoSchema.safeParse("relevo-demo/docs-es").success).toBe(true);
+  });
+
+  it("la issue pre-aprobada también tiene que vivir en el repo declarado", () => {
+    // Si no, `disclosureFor` afirma que «el proyecto marcó la issue como abierta a ayuda de IA» sobre un
+    // proyecto que el esquema no respalda. La divulgación no puede venir vacía, pero sí puede mentir.
+    const bad = structuredClone(PATCH);
+    (bad["preApproval"] as { issueUrl: string }).issueUrl = "https://github.com/otro/proyecto/issues/1";
+    expect(TaskSpecSchema.safeParse(bad).success).toBe(false);
   });
 });

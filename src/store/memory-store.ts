@@ -170,6 +170,12 @@ export class MemoryTaskStore implements TaskStore {
     return this.#claimEvents.filter((event) => event.sessionId === sessionId).length;
   }
 
+  async countPatchClaimsInSession(sessionId: string): Promise<number> {
+    return this.#claimEvents.filter(
+      (event) => event.sessionId === sessionId && event.taskType === "patch",
+    ).length;
+  }
+
   async countClaimsForVolunteerSince(volunteerId: string, sinceIso: string): Promise<number> {
     return this.#claimEvents.filter(
       (event) => event.volunteerId === volunteerId && event.at >= sinceIso,

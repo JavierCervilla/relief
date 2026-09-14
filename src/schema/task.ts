@@ -63,15 +63,57 @@ export const LanguageSchema = z
   .string()
   .regex(/^[a-z]{2}(-[A-Z]{2})?$/, "idioma en formato BCP-47 corto, p. ej. `es` o `pt-BR`");
 
-/** URL https, que es como se comprueba un consentimiento: mirándolo. */
+/**
+ * URL https, que es como se comprueba un consentimiento: mirándolo.
+ *
+ * Y por eso tiene tres refuerzos más allá de «empieza por https», los tres contra el mismo ataque —
+ * que un humano lea una cosa y el navegador vaya a otra:
+ *   - **Sin userinfo.** `https://github.com@evil.example/issues/1` se lee como GitHub y el host es
+ *     `evil.example`. Contra un verificador humano eso funciona, que es justo el verificador que tenemos.
+ *   - **Sin credenciales embebidas**, por lo mismo y porque no queremos secretos en una fixture.
+ *   - **Sin caracteres de control.** Zod guarda la cadena byte a byte, así que una URL con escapes ANSI
+ *     puede reescribir el terminal de quien la revisa.
+ */
 const HttpsUrl = z
   .url()
-  .refine((u) => u.startsWith("https://"), "el consentimiento se comprueba en una URL https");
+  .refine((u) => u.startsWith("https://"), "el consentimiento se comprueba en una URL https")
+  // eslint-disable-next-line no-control-regex -- el punto es precisamente cazar caracteres de control
+  .refine((u) => !/[\u0000-\u001f\u007f]/.test(u), "sin caracteres de control: una URL con escapes ANSI le miente al terminal de quien la revisa")
+  .refine((u) => {
+    try {
+      const parsed = new URL(u);
+      return parsed.username === "" && parsed.password === "";
+    } catch {
+      return false;
+    }
+  }, "sin userinfo ni credenciales: `https://github.com@evil.example/` se lee como GitHub y no lo es");
 
-/** `owner/name` de un repositorio. */
-const RepoSchema = z
+/**
+ * `owner/name` de un repositorio.
+ *
+ * Ningún segmento puede empezar por `-` ni ser `.`/`..`. Hoy `repo` sólo se guarda y se muestra, pero el
+ * día que la ingesta haga `git clone` o `gh api` con este valor, un guion inicial es inyección de
+ * argumentos y `..` es un salto de directorio. Se estrecha ahora, que cuesta una regex.
+ */
+export const RepoSchema = z
   .string()
-  .regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/, "repositorio en formato `owner/name`");
+  .regex(
+    /^[A-Za-z0-9_.][A-Za-z0-9_.-]*\/[A-Za-z0-9_.][A-Za-z0-9_.-]*$/,
+    "repositorio en formato `owner/name`, sin segmentos que empiecen por `-`",
+  )
+  .refine(
+    (r) => r.split("/").every((seg) => seg !== "." && seg !== ".."),
+    "ningún segmento del repositorio puede ser `.` ni `..`",
+  );
+
+/** ¿La URL del consentimiento vive de verdad en el repo que dice autorizar? */
+function urlCoversRepo(url: string, repo: string): boolean {
+  try {
+    return new URL(url).pathname.includes(`/${repo}/`) || new URL(url).pathname.endsWith(`/${repo}`);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * De dónde sale la tarea y con qué permiso. **Obligatorio en toda tarea.**
@@ -112,7 +154,10 @@ export const TaskSourceSchema = z.discriminatedUnion("kind", [
       maintainer: NonEmpty,
       grantedAt: Timestamp,
     }),
-  }),
+  }).refine(
+    (src) => urlCoversRepo(src.optIn.url, src.repo),
+    "el opt-in tiene que vivir en el repo que autoriza: una URL que no lo nombra es justo la comprobación que un humano no hace",
+  ),
 ]);
 export type TaskSource = z.infer<typeof TaskSourceSchema>;
 
@@ -219,8 +264,15 @@ export const PatchTaskSchema = z.object({
     maintainer: NonEmpty,
     approvedAt: Timestamp,
   }),
-  /** Cómo reproducir el fallo. Lo escribe el mantenedor: es lo que el voluntario tiene que ver fallar. */
-  reproduction: NonEmpty,
+  /**
+   * Cómo reproducir el fallo: lo que el voluntario tiene que ver fallar antes de tocar nada.
+   *
+   * **Es contenido NO confiable**, aunque venga de una issue pre-aprobada. La pre-aprobación autoriza
+   * que esa issue admita ayuda de IA; no autentica quién escribió su cuerpo, y los pasos de
+   * reproducción los escribe quien reporta el fallo, que es cualquiera. Además es el único campo que le
+   * dice a una persona que **ejecute** algo, así que sale delimitado como el resto del material.
+   */
+  reproduction: UntrustedTextSchema,
 });
 
 export const TaskSpecSchema = z
@@ -233,6 +285,13 @@ export const TaskSpecSchema = z
   .refine(
     (task) => task.type !== "patch" || task.source.kind === "oss",
     "un `patch` sólo puede venir de una fuente `oss`: el nivel 2 del consentimiento no existe fuera de un repo",
+  )
+  .refine(
+    (task) =>
+      task.type !== "patch" ||
+      task.source.kind !== "oss" ||
+      urlCoversRepo(task.preApproval.issueUrl, task.source.repo),
+    "la issue pre-aprobada tiene que vivir en el repo que la tarea declara: si no, la frase de divulgación afirma algo que el esquema no respalda",
   );
 export type TaskSpec = z.infer<typeof TaskSpecSchema>;
 
@@ -363,6 +422,13 @@ export const QuotaSchema = z.object({
   maxClaimsPerSession: z.number().int().positive(),
   claimsToday: z.number().int().nonnegative(),
   maxClaimsPerDay: z.number().int().positive(),
+  /**
+   * Parches de esta sesión. Va aquí por lo mismo que los otros dos contadores: un tope que sólo se ve
+   * cuando muerde hace que el voluntario lea «1/3 en esta sesión», elija un parche y se coma un
+   * rechazo duro. Un límite invisible parece una avería.
+   */
+  patchClaimsThisSession: z.number().int().nonnegative(),
+  maxPatchClaimsPerSession: z.number().int().positive(),
 });
 export type Quota = z.infer<typeof QuotaSchema>;
 
@@ -419,16 +485,17 @@ export const GetTaskOutputSchema = z.object({
     question: NonEmpty.optional(),
     labels: z.array(NonEmpty).optional(),
     preApproval: z
-      .object({ issueUrl: z.string(), maintainer: NonEmpty, approvedAt: Timestamp })
+      .object({ issueUrl: HttpsUrl, maintainer: NonEmpty, approvedAt: Timestamp })
       .optional(),
-    reproduction: NonEmpty.optional(),
+    /** La reproducción, delimitada. Ver `src/server/untrusted.ts`: es un comando que alguien ejecutará. */
+    untrustedReproduction: z.string().optional(),
     /**
      * La frase de divulgación, ya redactada, para pegar tal cual en el PR o el comentario.
      *
      * Va aquí y no en la skill porque una skill se edita. Los mantenedores piden que se avise de que
      * hay IA detrás; dárselo escrito quita la única excusa para no hacerlo.
      */
-    disclosure: z.string().optional(),
+    disclosure: NonEmpty.optional(),
     checklist: z.array(ChecklistItemSchema),
     estimatedMinutes: z.number().int().positive(),
     status: TaskStatusSchema,

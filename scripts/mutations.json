@@ -222,5 +222,110 @@
     "file": "src/server/service.ts",
     "from": "      .filter((task) => input.sourceKind === undefined || task.source.kind === input.sourceKind)",
     "to": "      .filter(() => true)"
+  },
+  {
+    "id": "M33",
+    "what": "S-01 — el render deja de enseñarle a la PERSONA el consentimiento del proyecto",
+    "file": "src/server/mcp.ts",
+    "from": "        const consentimiento =\n          task.source.kind === \"oss\"",
+    "to": "        const consentimiento =\n          (false as boolean)"
+  },
+  {
+    "id": "M34",
+    "what": "S-01 — el render deja de enseñar la reproducción y la issue pre-aprobada",
+    "file": "src/server/mcp.ts",
+    "from": "        const parche =\n          task.preApproval === undefined",
+    "to": "        const parche =\n          (true as boolean)"
+  },
+  {
+    "id": "M35",
+    "what": "S-01 — la frase de divulgación vuelve a morir en el structuredContent",
+    "file": "src/server/mcp.ts",
+    "from": "        const divulgacion =\n          task.disclosure === undefined",
+    "to": "        const divulgacion =\n          (true as boolean)"
+  },
+  {
+    "id": "M36",
+    "what": "S-02 — la reproducción vuelve a salir sin vallar, siendo lo único que alguien ejecuta",
+    "file": "src/server/service.ts",
+    "from": "              untrustedReproduction: wrapUntrusted(task.reproduction),",
+    "to": "              untrustedReproduction: task.reproduction,"
+  },
+  {
+    "id": "M37",
+    "what": "S-04 — la URL del consentimiento vuelve a admitir userinfo y credenciales",
+    "file": "src/schema/task.ts",
+    "from": "      return parsed.username === \"\" && parsed.password === \"\";",
+    "to": "      return parsed.protocol === \"https:\";"
+  },
+  {
+    "id": "M38",
+    "what": "S-04 — la URL vuelve a admitir escapes ANSI que reescriben el terminal",
+    "file": "src/schema/task.ts",
+    "from": "  .refine((u) => !/[\\u0000-\\u001f\\u007f]/.test(u), \"sin caracteres de control: una URL con escapes ANSI le miente al terminal de quien la revisa\")",
+    "to": "  .refine((u) => u.length > 0, \"sin caracteres de control: una URL con escapes ANSI le miente al terminal de quien la revisa\")"
+  },
+  {
+    "id": "M39",
+    "what": "S-03 — el opt-in deja de tener que vivir en el repo que autoriza",
+    "file": "src/schema/task.ts",
+    "from": "    (src) => urlCoversRepo(src.optIn.url, src.repo),",
+    "to": "    () => true,"
+  },
+  {
+    "id": "M40",
+    "what": "S-06 — el repositorio vuelve a admitir `..` y guiones iniciales",
+    "file": "src/schema/task.ts",
+    "from": "    (r) => r.split(\"/\").every((seg) => seg !== \".\" && seg !== \"..\"),",
+    "to": "    () => true,"
+  },
+  {
+    "id": "M41",
+    "what": "O-V1 — el tope de parches deja de ser propio y se come cualquier claim de la sesión",
+    "file": "src/store/memory-store.ts",
+    "from": "        (event) => event.sessionId === request.sessionId && event.taskType === \"patch\",",
+    "to": "        (event) => event.sessionId === request.sessionId,"
+  },
+  {
+    "id": "M42",
+    "what": "O-V6 — la vía ONG deja de tener que nombrar su acuerdo (nivel 1 del lado ONG)",
+    "file": "src/schema/task.ts",
+    "from": "    agreement: NonEmpty,",
+    "to": "    agreement: z.string().default(\"\") as unknown as typeof NonEmpty,"
+  },
+  {
+    "id": "M43",
+    "what": "O-V6 — la reproducción de un parche deja de ser obligatoria",
+    "file": "src/schema/task.ts",
+    "from": "  reproduction: UntrustedTextSchema,",
+    "to": "  reproduction: UntrustedTextSchema.optional() as unknown as typeof UntrustedTextSchema,"
+  },
+  {
+    "id": "M44",
+    "what": "O-V6 — una tarea de ONG empieza a llevar frase de divulgación, que no le aplica",
+    "file": "src/server/service.ts",
+    "from": "        ...(task.source.kind === \"oss\" ? { disclosure: disclosureFor(task) } : {}),",
+    "to": "        ...{ disclosure: disclosureFor(task) },"
+  },
+  {
+    "id": "M45",
+    "what": "O-V6 — el filtro por organización deja de filtrar",
+    "file": "src/server/service.ts",
+    "from": "      .filter((task) => input.org === undefined || task.source.org === input.org)",
+    "to": "      .filter(() => true)"
+  },
+  {
+    "id": "M46",
+    "what": "O-V3 — la issue pre-aprobada deja de tener que vivir en el repo declarado",
+    "file": "src/schema/task.ts",
+    "from": "      urlCoversRepo(task.preApproval.issueUrl, task.source.repo),",
+    "to": "      true,"
+  },
+  {
+    "id": "M47",
+    "what": "O-V5 — el contador de parches deja de contar parches",
+    "file": "src/store/memory-store.ts",
+    "from": "  async countPatchClaimsInSession(sessionId: string): Promise<number> {\n    return this.#claimEvents.filter(\n      (event) => event.sessionId === sessionId && event.taskType === \"patch\",\n    ).length;",
+    "to": "  async countPatchClaimsInSession(_sessionId: string): Promise<number> {\n    return 0;"
   }
 ]

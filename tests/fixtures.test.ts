@@ -43,7 +43,7 @@ describe("fixtures", () => {
         expect(task.source.agreement.length).toBeGreaterThan(0);
       } else {
         expect(task.source.optIn.url).toMatch(/^https:\/\//);
-        expect(task.source.maintainer ?? task.source.optIn.maintainer).toBeTruthy();
+        expect(task.source.optIn.maintainer.length).toBeGreaterThan(0);
       }
     }
   });

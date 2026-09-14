@@ -110,6 +110,8 @@ export interface TaskStore {
   tryRelease(taskId: string, volunteerId: string): Promise<ReleaseResult>;
 
   countClaimsInSession(sessionId: string): Promise<number>;
+  /** Sólo los parches: tienen su propio tope y por tanto su propio contador visible. */
+  countPatchClaimsInSession(sessionId: string): Promise<number>;
   /** Claims de este voluntario a partir de `sinceIso` (inclusive). */
   countClaimsForVolunteerSince(volunteerId: string, sinceIso: string): Promise<number>;
 
