@@ -39,9 +39,33 @@ export const NOMBRES_VETADOS: readonly string[] = [
  * aquí con su motivo. Eso es la propiedad, no un efecto secundario — en esta página un número nuevo es
  * una afirmación nueva, y tiene que costar una línea de justificación.
  *
- * Límite honesto que ningún regex va a cubrir: un número escrito en letra («una docena de
- * organizaciones»), o cambiar «3 tareas por sesión» por «3 organizaciones a bordo» sin tocar la cuenta.
- * Eso es lectura humana. El veto no la sustituye: le quita lo mecánico.
+ * ## El límite, que es de semántica y no de mecanismo
+ *
+ * Esto preserva la CUENTA, no el SIGNIFICADO. Y el ejemplo que importa no es reetiquetar un tope —eso
+ * se ve— sino reencuadrar una cifra **del estudio**, que son las que más aspecto de dato citable
+ * tienen y las que un editor de copy podría tocar sin darse cuenta:
+ *
+ *     "un estudio sobre 294 repositorios"  →  "un despliegue en 294 organizaciones a bordo"
+ *
+ * Verde, porque el `294` sigue saliendo una vez. También pasa un número escrito en letra («una docena
+ * de organizaciones»). Distinguir «294 repositorios» de «294 organizaciones a bordo» es leer, no
+ * parsear: el veto no sustituye a la revisión humana, le quita lo mecánico. Lo reprodujo el
+ * verificador y se escribe aquí, en el fichero que lo implementa, que es la forma honesta de tener un
+ * límite.
+ *
+ * ## Las cuentas dependen también de la PLANTILLA, no sólo del diccionario
+ *
+ * Los ordinales `§` y los de los pasos los pone `Landing.astro`. Un cambio estructural —una sección
+ * más, renumerar— pondrá esto rojo **por un motivo que no es honestidad**. Quien lo vea tiene que
+ * poder distinguirlo antes de diagnosticar mal: si el diff que lo puso rojo toca la plantilla y no el
+ * texto, es una cifra que hay que redeclarar, no una métrica que alguien ha colado.
+ *
+ * ## Y lo que NO hay que hacer cuando se ponga rojo
+ *
+ * El riesgo de un gate frágil no es la fragilidad: es la fatiga — que alguien, al tercer rojo, relaje
+ * el aserto en vez de declarar la cifra. Este repo ya tiene el anticuerpo escrito en `copy.test.ts`:
+ * **un aserto que se relaja al primer rojo deja de ser un aserto**. Declarar la cifra cuesta una línea
+ * con su motivo; relajar el aserto cuesta el veto entero.
  */
 export const CIFRAS_DECLARADAS: ReadonlyMap<string, { veces: number; motivo: string }> = new Map([
   ["0", { veces: 2, motivo: "el 0 de AGPL-3.0, en la cabecera y en el pie" }],
