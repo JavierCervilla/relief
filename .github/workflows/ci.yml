@@ -96,10 +96,28 @@ jobs:
           chmod +x /usr/local/bin/osv-scanner
           osv-scanner --version
 
+      - name: Las tres herramientas están DE VERDAD en el PATH
+        # `security-gate.sh` falla ABIERTO por diseño: si una herramienta no está, omite su peldaño,
+        # imprime "COBERTURA INCOMPLETA" y sale 0. Eso es correcto en local y catastrófico en CI, donde
+        # el job daría verde con el SAST sin correr. `pipx install` puede salir 0 sin dejar el binario
+        # en el PATH, así que instalar no es lo mismo que tener. Esto lo convierte en rojo.
+        # Lo encontró el verificador: gitleaks y osv-scanner ya se comprobaban, semgrep no.
+        run: |
+          missing=""
+          for tool in gitleaks semgrep osv-scanner; do
+            command -v "$tool" >/dev/null 2>&1 || missing="$missing $tool"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::la escalera omitiría en silencio:$missing"
+            exit 1
+          fi
+          semgrep --version
+
       - name: Escalera de seguridad (skill security-gate)
         # Gate DURO en los tres peldaños desde el día uno. El repo nace hoy: no hay CVE heredado que
         # justifique un `--deps-advisory`, y estrenar el proyecto con un peldaño que no muerde sería
-        # crear la deuda en vez de evitarla.
+        # crear la deuda en vez de evitarla. El paso de arriba garantiza que "verde" significa
+        # "escaneado", y no "no se escaneó nada".
         run: bash .claude/skills/security-gate/scripts/security-gate.sh .
 
   agent-config:

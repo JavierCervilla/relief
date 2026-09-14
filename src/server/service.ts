@@ -175,63 +175,50 @@ export class RelevoService {
     alreadyYours: boolean;
   }> {
     await this.#expireStaleClaims();
-    const task = await this.#requireTask(input.taskId);
-    const { volunteerId, sessionId } = this.#session;
-
-    // Invariante 1, mitad idempotente: reintentar tras un corte de red no es un error, y no consume
-    // cuota otra vez. Se comprueba ANTES que nada, incluida la cuota: si ya es tuya, ya la pagaste.
-    const existing = await this.#store.getClaim(task.id);
-    if (existing !== undefined) {
-      if (existing.volunteerId !== volunteerId) {
-        throw new RelevoError(
-          "claimed_by_other",
-          `La tarea ${task.id} ya está reclamada por otro voluntario hasta ${existing.expiresAt}.`,
-        );
-      }
-      return { claim: existing, quota: await this.#quota(), alreadyYours: true };
-    }
-
-    if (task.status !== "open") {
-      throw new RelevoError(
-        "task_not_available",
-        `La tarea ${task.id} está en estado "${task.status}" y no se puede reclamar.`,
-      );
-    }
-
-    // Invariante 3. Toda negativa va ANTES de cualquier efecto: nada de guardar el claim y luego
-    // arrepentirse.
-    const quotaBefore = await this.#quota();
-    if (quotaBefore.claimsThisSession >= LIMITS.maxClaimsPerSession) {
-      throw new RelevoError(
-        "session_quota_exceeded",
-        `Límite de ${LIMITS.maxClaimsPerSession} tareas por sesión alcanzado. Abre una sesión nueva otro rato: el límite existe para que tu uso siga siendo personal y ordinario.`,
-      );
-    }
-    if (quotaBefore.claimsToday >= LIMITS.maxClaimsPerDay) {
-      throw new RelevoError(
-        "daily_quota_exceeded",
-        `Límite de ${LIMITS.maxClaimsPerDay} tareas al día alcanzado. Vuelve mañana.`,
-      );
-    }
-
     const now = this.#now();
-    const claim: Claim = {
-      taskId: task.id,
-      volunteerId,
-      sessionId,
+
+    // Invariantes 1 y 3, en UNA sola operación del store. Antes esto era comprobar-aquí y
+    // guardar-después con cuatro `await` en medio, y seis `claim_task` simultáneos se llevaban seis
+    // tareas con un límite de tres. Ver la cabecera de `store/task-store.ts`.
+    const result = await this.#store.tryClaim({
+      taskId: input.taskId,
+      volunteerId: this.#session.volunteerId,
+      sessionId: this.#session.sessionId,
       claimedAt: now.toISOString(),
       expiresAt: new Date(now.getTime() + LIMITS.claimTtlMs).toISOString(),
-    };
-    await this.#store.saveClaim(claim);
-    await this.#store.saveTask({ ...task, status: "claimed" });
-    await this.#store.appendClaimEvent({
-      taskId: task.id,
-      volunteerId,
-      sessionId,
-      at: claim.claimedAt,
+      maxClaimsPerSession: LIMITS.maxClaimsPerSession,
+      maxClaimsPerDay: LIMITS.maxClaimsPerDay,
+      dayStartIso: startOfUtcDay(now),
     });
 
-    return { claim, quota: await this.#quota(), alreadyYours: false };
+    switch (result.outcome) {
+      case "claimed":
+        return { claim: result.claim, quota: await this.#quota(), alreadyYours: false };
+      case "already_yours":
+        return { claim: result.claim, quota: await this.#quota(), alreadyYours: true };
+      case "claimed_by_other":
+        throw new RelevoError(
+          "claimed_by_other",
+          `La tarea ${input.taskId} ya está reclamada por otro voluntario hasta ${result.claim.expiresAt}.`,
+        );
+      case "task_not_found":
+        throw new RelevoError("task_not_found", `No existe la tarea ${input.taskId}.`);
+      case "task_not_available":
+        throw new RelevoError(
+          "task_not_available",
+          `La tarea ${input.taskId} está en estado "${result.status}" y no se puede reclamar.`,
+        );
+      case "session_quota_exceeded":
+        throw new RelevoError(
+          "session_quota_exceeded",
+          `Límite de ${LIMITS.maxClaimsPerSession} tareas por sesión alcanzado. Abre una sesión nueva otro rato: el límite existe para que tu uso siga siendo personal y ordinario.`,
+        );
+      case "daily_quota_exceeded":
+        throw new RelevoError(
+          "daily_quota_exceeded",
+          `Límite de ${LIMITS.maxClaimsPerDay} tareas al día alcanzado. Vuelve mañana.`,
+        );
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -240,11 +227,11 @@ export class RelevoService {
 
   async releaseTask(input: ReleaseTaskInput) {
     const expired = await this.#expireStaleClaims();
-    const task = await this.#requireTask(input.taskId);
-    await this.#requireLiveClaim(task, expired);
-    await this.#store.deleteClaim(task.id);
-    await this.#store.saveTask({ ...task, status: "open" });
-    return { taskId: task.id, status: "open" as const, quota: await this.#quota() };
+    const result = await this.#store.tryRelease(input.taskId, this.#session.volunteerId);
+    if (result.outcome !== "released") {
+      throw this.#claimError(result.outcome, input.taskId, expired);
+    }
+    return { taskId: input.taskId, status: "open" as const, quota: await this.#quota() };
   }
 
   // -------------------------------------------------------------------------
@@ -254,9 +241,9 @@ export class RelevoService {
   async submitResult(input: SubmitResultInput): Promise<{ submission: Submission; quota: Quota }> {
     const expired = await this.#expireStaleClaims();
     const task = await this.#requireTask(input.taskId);
-    await this.#requireLiveClaim(task, expired);
 
-    // El resultado tiene que responder a la pregunta que se hizo.
+    // La validación del resultado va ANTES y es pura: el tipo y las etiquetas de una tarea no cambian,
+    // así que leerlos fuera de la operación atómica no abre ninguna ventana.
     if (input.result.type !== task.type) {
       throw new RelevoError(
         "result_type_mismatch",
@@ -273,20 +260,19 @@ export class RelevoService {
       }
     }
 
-    const submission: Submission = {
+    // Comprobar el claim y registrar el envío, en una sola operación: dos `submit_result` simultáneos
+    // registraban dos envíos de la misma tarea.
+    const result = await this.#store.trySubmit({
       taskId: task.id,
       volunteerId: this.#session.volunteerId,
       sessionId: this.#session.sessionId,
       submittedAt: this.#now().toISOString(),
       result: input.result,
-      reviewedByHuman: true,
-    };
-    await this.#store.saveSubmission(submission);
-    await this.#store.saveTask({ ...task, status: "submitted" });
-    // El claim se retira: la tarea ya no está en manos de nadie, está esperando a la ONG.
-    await this.#store.deleteClaim(task.id);
-
-    return { submission, quota: await this.#quota() };
+    });
+    if (result.outcome !== "submitted") {
+      throw this.#claimError(result.outcome, task.id, expired);
+    }
+    return { submission: result.submission, quota: await this.#quota() };
   }
 
   // -------------------------------------------------------------------------
@@ -302,25 +288,25 @@ export class RelevoService {
   }
 
   /**
-   * Invariante 4. Distingue los tres motivos por los que puedes no tener derecho a enviar, porque a un
-   * voluntario que acaba de trabajar media hora le importa mucho cuál de los tres es.
+   * Traduce el motivo por el que el store rechazó una operación sobre un claim.
+   *
+   * Distingue `claim_expired` de `no_claim` porque desde fuera se sienten igual y no lo son: a quien
+   * acaba de perder media hora de trabajo por el TTL hay que decírselo con esas palabras.
    */
-  async #requireLiveClaim(task: Task, expired: ReadonlySet<string>): Promise<Claim> {
-    const claim = await this.#store.getClaim(task.id);
-    if (claim === undefined) {
-      // Los dos casos se sienten igual desde fuera y no lo son: al que acaba de perder media hora de
-      // trabajo por el TTL hay que decírselo con esas palabras, no con "no tienes reclamada nada".
-      if (expired.has(task.id)) {
-        throw new RelevoError(
-          "claim_expired",
-          `Tu claim sobre ${task.id} caducó (${LIMITS.claimTtlMs / 60000} minutos) y la tarea volvió a la cola. Reclámala otra vez y vuelve a enviar: no has perdido el texto, sólo la reserva.`,
-        );
-      }
-      throw new RelevoError("no_claim", `No tienes reclamada la tarea ${task.id}.`);
+  #claimError(
+    outcome: "no_claim" | "claimed_by_other",
+    taskId: string,
+    expired: ReadonlySet<string>,
+  ): RelevoError {
+    if (outcome === "claimed_by_other") {
+      return new RelevoError("claimed_by_other", `La tarea ${taskId} está reclamada por otro voluntario.`);
     }
-    if (claim.volunteerId !== this.#session.volunteerId) {
-      throw new RelevoError("claimed_by_other", `La tarea ${task.id} está reclamada por otro voluntario.`);
+    if (expired.has(taskId)) {
+      return new RelevoError(
+        "claim_expired",
+        `Tu claim sobre ${taskId} caducó (${LIMITS.claimTtlMs / 60000} minutos) y la tarea volvió a la cola. Reclámala otra vez y vuelve a enviar: no has perdido el texto, sólo la reserva.`,
+      );
     }
-    return claim;
+    return new RelevoError("no_claim", `No tienes reclamada la tarea ${taskId}.`);
   }
 }

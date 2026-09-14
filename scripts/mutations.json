@@ -2,9 +2,9 @@
   {
     "id": "M1",
     "what": "invariante 1 — se deja reclamar lo que ya tiene otro",
-    "file": "src/server/service.ts",
-    "from": "      if (existing.volunteerId !== volunteerId) {",
-    "to": "      if (false as boolean) {"
+    "file": "src/store/memory-store.ts",
+    "from": "      return existing.volunteerId === request.volunteerId",
+    "to": "      return true as boolean"
   },
   {
     "id": "M2",
@@ -16,30 +16,30 @@
   {
     "id": "M3",
     "what": "invariante 3 — sin límite por sesión",
-    "file": "src/server/service.ts",
-    "from": "    if (quotaBefore.claimsThisSession >= LIMITS.maxClaimsPerSession) {",
-    "to": "    if (false as boolean) {"
+    "file": "src/store/memory-store.ts",
+    "from": "    if (inSession >= request.maxClaimsPerSession) return { outcome: \"session_quota_exceeded\" };",
+    "to": "    if (false as boolean) return { outcome: \"session_quota_exceeded\" };"
   },
   {
     "id": "M4",
     "what": "invariante 3 — sin límite diario",
-    "file": "src/server/service.ts",
-    "from": "    if (quotaBefore.claimsToday >= LIMITS.maxClaimsPerDay) {",
-    "to": "    if (false as boolean) {"
+    "file": "src/store/memory-store.ts",
+    "from": "    if (today >= request.maxClaimsPerDay) return { outcome: \"daily_quota_exceeded\" };",
+    "to": "    if (false as boolean) return { outcome: \"daily_quota_exceeded\" };"
   },
   {
     "id": "M5",
     "what": "invariante 3 — la cuota se cuenta sobre claims VIVOS, así que liberar la devolvería",
     "file": "src/store/memory-store.ts",
-    "from": "    return this.#claimEvents.filter((event) => event.sessionId === sessionId).length;",
-    "to": "    return [...this.#claims.values()].filter((claim) => claim.sessionId === sessionId).length;"
+    "from": "    const inSession = this.#claimEvents.filter(\n      (event) => event.sessionId === request.sessionId,\n    ).length;",
+    "to": "    const inSession = [...this.#claims.values()].filter(\n      (claim) => claim.sessionId === request.sessionId,\n    ).length;"
   },
   {
     "id": "M6",
     "what": "invariante 4 — submit_result no comprueba el claim",
-    "file": "src/server/service.ts",
-    "from": "    await this.#requireLiveClaim(task, expired);\n\n    // El resultado",
-    "to": "\n    // El resultado"
+    "file": "src/store/memory-store.ts",
+    "from": "    const claim = this.#claims.get(request.taskId);\n    if (claim === undefined) return { outcome: \"no_claim\" };\n    if (claim.volunteerId !== request.volunteerId) return { outcome: \"claimed_by_other\" };",
+    "to": "    const claim = this.#claims.get(request.taskId);\n    if (false as boolean) return { outcome: \"no_claim\" };\n    if (claim !== undefined && false as boolean) return { outcome: \"claimed_by_other\" };"
   },
   {
     "id": "M7",
@@ -93,8 +93,64 @@
   {
     "id": "M14",
     "what": "claim_task — reclamar lo tuyo otra vez consume cuota y renueva el TTL",
-    "file": "src/server/service.ts",
-    "from": "    const existing = await this.#store.getClaim(task.id);",
+    "file": "src/store/memory-store.ts",
+    "from": "    const existing = this.#claims.get(request.taskId);",
     "to": "    const existing = undefined as Claim | undefined;"
+  },
+  {
+    "id": "M15",
+    "what": "concurrencia — la cuota vuelve a comprobarse fuera de la operación atómica",
+    "file": "src/store/memory-store.ts",
+    "from": "    const inSession = this.#claimEvents.filter(\n      (event) => event.sessionId === request.sessionId,\n    ).length;",
+    "to": "    await Promise.resolve();\n    const inSession = this.#claimEvents.filter(\n      (event) => event.sessionId === request.sessionId,\n    ).length;"
+  },
+  {
+    "id": "M16",
+    "what": "concurrencia — el envío deja de ser atómico y admite duplicados",
+    "file": "src/store/memory-store.ts",
+    "from": "    this.#submissions.push(clone(submission));",
+    "to": "    await Promise.resolve();\n    this.#submissions.push(clone(submission));"
+  },
+  {
+    "id": "M17",
+    "what": "caducidad — reabre también una tarea que ya estaba enviada",
+    "file": "src/server/service.ts",
+    "from": "      if (task !== undefined && task.status === \"claimed\") {",
+    "to": "      if (task !== undefined) {"
+  },
+  {
+    "id": "M18",
+    "what": "TTL — el borde exacto se regala (`>` pasa a `>=`)",
+    "file": "src/server/service.ts",
+    "from": "      if (claim.expiresAt > nowIso) continue;",
+    "to": "      if (claim.expiresAt >= nowIso) continue;"
+  },
+  {
+    "id": "M19",
+    "what": "valla — el nonce se queda en 4 hex, con riesgo de colisión con texto legítimo",
+    "file": "src/server/untrusted.ts",
+    "from": "const NONCE_LENGTH = 12;",
+    "to": "const NONCE_LENGTH = 4;"
+  },
+  {
+    "id": "M20",
+    "what": "cuota diaria — deja de contarse por voluntario y pasa a ser global",
+    "file": "src/store/memory-store.ts",
+    "from": "      (event) => event.volunteerId === request.volunteerId && event.at >= request.dayStartIso,",
+    "to": "      (event) => event.at >= request.dayStartIso,"
+  },
+  {
+    "id": "M21",
+    "what": "cuota diaria — el corte de día UTC desaparece y cuenta desde el principio de los tiempos",
+    "file": "src/server/service.ts",
+    "from": "      dayStartIso: startOfUtcDay(now),",
+    "to": "      dayStartIso: \"1970-01-01T00:00:00.000Z\","
+  },
+  {
+    "id": "M22",
+    "what": "MCP — vuelve a anunciarse `readOnlyHint` en tools que escriben",
+    "file": "src/server/mcp.ts",
+    "from": "      // SIN `readOnlyHint`. Mirar la cola devuelve a la cola los claims caducados, así que esto",
+    "to": "      annotations: { readOnlyHint: true },\n      // SIN `readOnlyHint`. Mirar la cola devuelve a la cola los claims caducados, así que esto"
   }
 ]

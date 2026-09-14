@@ -36,8 +36,16 @@ ONG ──(backlog)──► Relevo (cola) ──MCP──► sesión de Claude 
 
 Los verbos en mayúsculas los ejecuta **una persona**. No hay bucle, no hay modo desatendido y no lo habrá:
 un proceso que vacía la cuota sin intervención es justo el patrón por el que acaban baneadas las cuentas
-de los voluntarios. Los límites que lo impiden viven en el **servidor** (3 tareas por sesión, 10 al día,
-claim que caduca a los 30 minutos), no en la skill — una skill se puede editar; un invariante testeado no.
+de los voluntarios. Los límites que lo impiden —3 tareas por sesión, 10 al día, claim que caduca a los 30
+minutos— viven en el **código del servidor** y no en la skill, y se sostienen también cuando las llamadas
+llegan en paralelo, que es como las emite un agente de verdad.
+
+Un matiz que conviene decir en voz alta mientras sea cierto: **en esta fase el "servidor" es un proceso
+en la máquina del propio voluntario**, así que los límites son una barandilla honesta, no una garantía
+frente a alguien que quiera saltárselos. El de 10 al día, además, todavía no puede llegar a dispararse:
+sin persistencia cada proceso empieza de cero y el tope de sesión salta antes. Lo que hace falta para que
+esto sea una garantía —identidad y almacenamiento del lado del servicio— es la fase 2 del
+[`ROADMAP.md`](ROADMAP.md), y por eso hasta entonces no se despliega nada público.
 
 ## Las cinco tools
 

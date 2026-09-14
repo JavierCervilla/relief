@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 
 import { LIMITS } from "../src/schema/task.js";
 import { RelevoError } from "../src/server/errors.js";
-import { harness } from "./helpers.js";
+import { harness, syntheticTasks } from "./helpers.js";
 
 /** Ejecuta `fn` y devuelve el código del `RelevoError` que lanza. Falla si no lanza o si lanza otra cosa. */
 async function codeOf(fn: () => Promise<unknown>): Promise<string> {
@@ -68,6 +68,20 @@ describe("invariante 2 — el claim caduca a los 30 minutos", () => {
     expect(reclaimed.claim.volunteerId).toBe("borja");
   });
 
+  it("en el instante EXACTO del TTL el claim ya ha caducado", async () => {
+    // El borde que el test de al lado dice cubrir y no cubría: probaba TTL-1 y TTL+1, nunca TTL.
+    // `expiresAt > now` significa que al llegar la hora exacta el claim ya no vale.
+    const h = await harness();
+    await h.as({ volunteerId: "ana" }).claimTask({ taskId: "kiva-0001" });
+
+    h.clock.advanceMinutes(LIMITS.claimTtlMs / 60_000);
+
+    const reclaimed = await h
+      .as({ volunteerId: "borja", sessionId: "s2" })
+      .claimTask({ taskId: "kiva-0001" });
+    expect(reclaimed.claim.volunteerId).toBe("borja");
+  });
+
   it("justo ANTES del TTL el claim sigue vivo (el borde no se regala)", async () => {
     const h = await harness();
     await h.as({ volunteerId: "ana" }).claimTask({ taskId: "kiva-0001" });
@@ -108,6 +122,26 @@ describe("invariante 2 — el claim caduca a los 30 minutos", () => {
 
     const { tasks } = await h.as({ volunteerId: "borja", sessionId: "s2" }).listTasks({ limit: 50 });
     expect(tasks.map((t) => t.id)).not.toContain("kiva-0001");
+    expect((await h.store.getTask("kiva-0001"))?.status).toBe("submitted");
+  });
+
+  it("la guarda de 'sólo reabro lo que está claimed' se cumple con un claim vivo sobre algo ya enviado", async () => {
+    // Este estado NO se puede construir por la puerta de delante: enviar retira el claim en la misma
+    // operación. Se siembra por debajo a propósito, porque la alternativa es dejar una guarda que
+    // ningún test puede matar — y un aserto que no se ha visto fallar no cuenta. Lo encontró el
+    // verificador probando que la rama era inalcanzable.
+    const h = await harness();
+    await h.service.claimTask({ taskId: "kiva-0001" });
+    const task = await h.store.getTask("kiva-0001");
+    if (task === undefined) throw new Error("fixture ausente");
+    await h.store.saveTask({ ...task, status: "submitted" });
+
+    h.clock.advanceMinutes(LIMITS.claimTtlMs / 60_000 + 1);
+    await h.service.listTasks({ limit: 50 }); // dispara la caducidad
+
+    // El claim caducado SÍ se retira...
+    expect(await h.store.getClaim("kiva-0001")).toBeUndefined();
+    // ...pero la tarea se queda como estaba: el trabajo ya estaba hecho.
     expect((await h.store.getTask("kiva-0001"))?.status).toBe("submitted");
   });
 });
@@ -172,6 +206,33 @@ describe("invariante 3 — cuota de sesión y diaria, contada sobre CLAIMS", () 
     await h.as({ volunteerId: "ana" }).claimTask({ taskId: "kiva-0001" });
     const borja = h.as({ volunteerId: "borja", sessionId: "s2" });
     expect((await borja.listTasks({ limit: 1 })).quota.claimsToday).toBe(0);
+  });
+
+  it("cruzar medianoche UTC permite volver a reclamar: el corte manda sobre la DECISIÓN, no sólo sobre el contador", async () => {
+    // El test de abajo comprueba el contador que se MUESTRA; éste comprueba el que DECIDE. Son dos
+    // caminos distintos en el código y sólo uno estaba cubierto: borrar el corte de día del lado de la
+    // decisión no rompía nada. Lo cazó ampliar la batería de mutaciones (M21).
+    const h = await harness(syntheticTasks(24));
+    let taken = 0;
+    for (let session = 0; session < 4; session++) {
+      for (let i = 0; i < LIMITS.maxClaimsPerSession; i++) {
+        const id = `synth-${String(taken).padStart(3, "0")}`;
+        if (taken < LIMITS.maxClaimsPerDay) {
+          await h.as({ sessionId: `d1-${session}` }).claimTask({ taskId: id });
+        }
+        taken++;
+      }
+    }
+    // Agotado el día: el siguiente intento se rechaza.
+    expect(await codeOf(() => h.as({ sessionId: "d1-x" }).claimTask({ taskId: "synth-020" }))).toBe(
+      "daily_quota_exceeded",
+    );
+
+    h.clock.set("2026-09-15T00:00:00.000Z");
+
+    // Día nuevo, sesión nueva: vuelve a entrar.
+    const again = await h.as({ sessionId: "d2-0" }).claimTask({ taskId: "synth-020" });
+    expect(again.alreadyYours).toBe(false);
   });
 
   it("la cuota diaria se reinicia al cambiar el día UTC", async () => {

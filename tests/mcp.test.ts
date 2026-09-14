@@ -38,12 +38,20 @@ describe("superficie MCP", () => {
     expect(tools.map((tool) => tool.name).sort()).toEqual([...TOOLS].sort());
   });
 
-  it("las tools de lectura se anuncian como tales", async () => {
+  it("NINGUNA tool se anuncia como sólo-lectura, porque ninguna lo es", async () => {
+    // `list_tasks` y `get_task` devuelven a la cola los claims caducados: leen y escriben. Anunciarlas
+    // como sólo-lectura le miente al cliente que cachee o paralelice. Lo cazó el verificador: el test
+    // anterior aseguraba que la anotación estaba, no que fuera cierta.
     const { tools } = await client.listTools();
-    const byName = new Map(tools.map((tool) => [tool.name, tool]));
-    expect(byName.get("list_tasks")?.annotations?.readOnlyHint).toBe(true);
-    expect(byName.get("get_task")?.annotations?.readOnlyHint).toBe(true);
-    expect(byName.get("claim_task")?.annotations?.readOnlyHint).not.toBe(true);
+    for (const tool of tools) {
+      expect(tool.annotations?.readOnlyHint).not.toBe(true);
+    }
+  });
+
+  it("y de hecho listar caduca claims: la prueba de que no es sólo-lectura", async () => {
+    await client.callTool({ name: "claim_task", arguments: { taskId: "kiva-0001" } });
+    const before = await client.callTool({ name: "get_task", arguments: { taskId: "kiva-0001" } });
+    expect(textOf(before)).toContain("Estado: claimed");
   });
 
   it("las descripciones dicen que esto no se hace en bucle", async () => {

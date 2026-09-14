@@ -31,6 +31,30 @@ export async function fixtureTasks(): Promise<Task[]> {
   return loadTasks();
 }
 
+/**
+ * Tareas sintéticas, para los casos en que el juego del repo se queda corto.
+ *
+ * El límite diario es 10 y las fixtures son 6: sin esto, un test del techo diario pasa porque nunca
+ * llega a rozarlo, que es la clase de aserto que no prueba nada.
+ */
+export function syntheticTasks(count: number): Task[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `synth-${String(i).padStart(3, "0")}`,
+    type: "classify" as const,
+    org: "synthetic",
+    title: `Tarea sintética ${i}`,
+    instructions: "Clasifica.",
+    language: "en",
+    question: "¿Sí o no?",
+    labels: ["yes", "no"],
+    content: `Material ${i}.`,
+    checklist: [],
+    estimatedMinutes: 1,
+    createdAt: new Date(Date.UTC(2026, 8, 1, 0, i)).toISOString(),
+    status: "open" as const,
+  }));
+}
+
 export interface Harness {
   store: MemoryTaskStore;
   clock: FakeClock;

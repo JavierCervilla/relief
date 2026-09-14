@@ -35,7 +35,19 @@ sostiene el argumento de "uso ordinario".
 - [ ] Autenticación del voluntario (identidad estable para poder contar sus claims)
 - [ ] Postgres + Drizzle: implementación de `TaskStore` contra la DB, con los mismos tests
 - [ ] Expiración de claims como trabajo del servidor, no como efecto de la siguiente lectura
-- [ ] Ingesta del backlog de la ONG
+- [ ] **Ingesta del backlog de la ONG.** Hoy las tareas son fixtures del repo, revisadas y bajo CI. En
+      cuanto entren de fuera, tres cosas que hoy son defendibles dejan de serlo a la vez, así que van
+      nombradas aquí y no como deuda difusa (las señalaron `seguridad` y el `verificador` en RELE-1):
+  - [ ] **Campos derivados del material.** Sólo `content` va dentro de la valla. `title`,
+        `instructions`, `question` y `labels` se renderizan en el marco *confiable* — y los backlogs
+        reales derivan campos del propio documento (un título sacado de la primera línea). El arreglo no
+        es envolverlos: es que la ingesta separe la provenencia y valide esos campos contra plantilla.
+  - [ ] **Codepoints invisibles.** El bloque de etiquetas Unicode (U+E0000) atraviesa la valla intacto:
+        el material se entrega como dato y eso sigue funcionando, pero derrota la revisión humana, que
+        es la última capa — no se puede leer lo que no se ve. El repo ya vendoriza la lista exacta en
+        `check-unicode-safety.mjs`; aplicarla en tiempo de servicio es barato.
+  - [ ] **Cota de longitud.** `content`, `instructions`, `title` y la checklist no tienen máximo. Un
+        material de 10 MB es una denegación de contexto en la sesión del voluntario.
 
 ## Fase 3 — Piloto (8-10 semanas)
 
