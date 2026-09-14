@@ -1,0 +1,109 @@
+[
+  {
+    "id": "kiva-0001",
+    "type": "translate",
+    "org": "kiva",
+    "title": "Perfil de préstamo — cooperativa de café (ES → EN)",
+    "instructions": "Traduce el perfil al inglés conservando el sentido y las cifras exactas. No añadas información que no esté en el original ni adjetivos de tu cosecha. Nombres propios y topónimos se dejan tal cual.",
+    "language": "es",
+    "targetLanguage": "en",
+    "content": "Rosa tiene 41 años y vive en una comunidad rural donde cultiva café desde hace catorce años junto a su hermana. Con el préstamo anterior compró una despulpadora manual que redujo a la mitad el tiempo de procesado y le permitió vender grano de mejor calidad a un comprador de la capital. Ahora solicita 1.200 dólares para comprar sacos de yute, renovar el techo del secadero y adelantar el pago de la cosecha a las cuatro mujeres que trabajan con ella en temporada alta. Su objetivo para los próximos dos años es certificar la producción como orgánica.",
+    "checklist": [
+      { "id": "c1", "text": "Las cifras (edad, años, importe, número de personas) son idénticas al original." },
+      { "id": "c2", "text": "No se ha añadido información ausente en el original." },
+      { "id": "c3", "text": "El tono es informativo y sobrio, sin florituras ni súplica." },
+      { "id": "c4", "text": "Los nombres propios se conservan sin traducir." }
+    ],
+    "estimatedMinutes": 12,
+    "createdAt": "2026-09-10T08:00:00.000Z"
+  },
+  {
+    "id": "kiva-0002",
+    "type": "translate",
+    "org": "kiva",
+    "title": "Perfil de préstamo — taller de costura (PT → EN)",
+    "instructions": "Traduce el perfil al inglés conservando el sentido y las cifras exactas. No añadas información que no esté en el original. Mantén la moneda y las unidades del original.",
+    "language": "pt-BR",
+    "targetLanguage": "en",
+    "content": "Marcos trabalha com costura há nove anos e divide um pequeno ateliê com outros dois profissionais no centro da cidade. Ele produz uniformes escolares sob encomenda e, na última temporada, atendeu sete escolas da região. Com o empréstimo de 900 dólares pretende comprar uma máquina overloque usada, que hoje precisa alugar por hora, e adquirir tecido no atacado antes do aumento de preço que costuma ocorrer em fevereiro. Marcos calcula que a máquina própria reduz em cerca de um terço o custo de cada peça.",
+    "checklist": [
+      { "id": "c1", "text": "Las cifras (años, número de escuelas, importe, fracción de coste) son idénticas al original." },
+      { "id": "c2", "text": "Los términos técnicos de costura se traducen con el término inglés habitual del oficio." },
+      { "id": "c3", "text": "No se ha añadido información ausente en el original." }
+    ],
+    "estimatedMinutes": 10,
+    "createdAt": "2026-09-10T09:30:00.000Z"
+  },
+  {
+    "id": "plena-0001",
+    "type": "adapt",
+    "org": "plena-inclusion",
+    "title": "Aviso municipal de empadronamiento a lectura fácil",
+    "instructions": "Adapta el texto a lectura fácil siguiendo la norma. Una idea por frase, frases cortas, orden directo, sin subordinadas encadenadas. Explica cada palabra difícil la primera vez que aparezca. No elimines ningún plazo, requisito ni consecuencia: lo que se simplifica es cómo se dice, nunca qué se dice.",
+    "language": "es",
+    "standard": "UNE 153101:2018 EX",
+    "content": "De conformidad con lo establecido en la normativa vigente en materia de padrón municipal, las personas extranjeras no comunitarias sin autorización de residencia permanente están obligadas a renovar su inscripción padronal cada dos años, contados desde la fecha de alta o desde la última renovación efectuada. La no renovación en el plazo indicado determinará la caducidad de la inscripción y su consiguiente baja en el padrón, previa resolución del órgano competente, sin perjuicio de la posibilidad de solicitar una nueva alta con posterioridad aportando la documentación acreditativa correspondiente.",
+    "checklist": [
+      { "id": "c1", "text": "Cada frase contiene una sola idea." },
+      { "id": "c2", "text": "Se conserva el plazo de dos años y su punto de inicio." },
+      { "id": "c3", "text": "Se conserva la consecuencia de no renovar (la baja en el padrón)." },
+      { "id": "c4", "text": "Se conserva que se puede volver a darse de alta después." },
+      { "id": "c5", "text": "Palabras como 'padrón' o 'caducidad' se explican la primera vez." }
+    ],
+    "estimatedMinutes": 20,
+    "createdAt": "2026-09-11T07:15:00.000Z"
+  },
+  {
+    "id": "plena-0002",
+    "type": "adapt",
+    "org": "plena-inclusion",
+    "title": "Prospecto de medicamento — sección de dosificación a lectura fácil",
+    "instructions": "Adapta la sección a lectura fácil siguiendo la norma. No cambies ninguna dosis, intervalo ni advertencia: un error aquí es un daño, no un matiz de estilo. Si algo no se puede simplificar sin cambiar su significado, déjalo literal y explícalo aparte.",
+    "language": "es",
+    "standard": "UNE 153101:2018 EX",
+    "content": "La posología habitual en adultos es de un comprimido de 500 mg cada ocho horas, sin superar los tres comprimidos en veinticuatro horas. En pacientes con insuficiencia renal moderada se recomienda espaciar la administración a intervalos de doce horas. No debe administrarse conjuntamente con bebidas alcohólicas ni con otros medicamentos que contengan el mismo principio activo, dado el riesgo de hepatotoxicidad. Si se olvida una dosis, se tomará en cuanto se recuerde, salvo que falten menos de cuatro horas para la siguiente, en cuyo caso se omitirá la dosis olvidada.",
+    "checklist": [
+      { "id": "c1", "text": "Las dosis y los intervalos son idénticos al original." },
+      { "id": "c2", "text": "Se conserva el máximo de tres comprimidos en 24 horas." },
+      { "id": "c3", "text": "Se conserva la advertencia sobre el alcohol y sobre el mismo principio activo." },
+      { "id": "c4", "text": "La regla de la dosis olvidada se explica paso a paso." },
+      { "id": "c5", "text": "Cada frase contiene una sola idea." }
+    ],
+    "estimatedMinutes": 25,
+    "createdAt": "2026-09-11T10:40:00.000Z"
+  },
+  {
+    "id": "cochrane-0001",
+    "type": "classify",
+    "org": "cochrane-crowd",
+    "title": "¿Es un ensayo controlado aleatorizado?",
+    "instructions": "Lee la descripción del estudio y decide si describe un ensayo controlado aleatorizado (ECA). Un ECA asigna a los participantes a los grupos AL AZAR. Si la asignación es por orden de llegada, por fecha de nacimiento, por criterio del clínico o por preferencia del paciente, NO es aleatorizada. Si la descripción no permite decidirlo, elige 'unclear': adivinar contamina el registro más que abstenerse.",
+    "language": "en",
+    "question": "¿El estudio descrito es un ensayo controlado aleatorizado?",
+    "labels": ["rct", "not-rct", "unclear"],
+    "content": "We enrolled 248 adults with chronic lower back pain of at least three months' duration. Participants were allocated to either a twelve-week supervised exercise programme or to usual care using a computer-generated sequence with allocation concealment by sealed opaque envelopes. Outcome assessors were blinded to group assignment. The primary outcome was change in the Roland-Morris Disability Questionnaire score at six months. Analysis followed the intention-to-treat principle.",
+    "checklist": [
+      { "id": "c1", "text": "La justificación cita la frase concreta del texto que decide la etiqueta." },
+      { "id": "c2", "text": "No se ha usado 'unclear' por pereza: sólo si el texto de verdad no lo dice." }
+    ],
+    "estimatedMinutes": 4,
+    "createdAt": "2026-09-12T06:00:00.000Z"
+  },
+  {
+    "id": "cochrane-0002",
+    "type": "classify",
+    "org": "cochrane-crowd",
+    "title": "¿Es un ensayo controlado aleatorizado?",
+    "instructions": "Lee la descripción del estudio y decide si describe un ensayo controlado aleatorizado (ECA). Un ECA asigna a los participantes a los grupos AL AZAR. Si la asignación es por orden de llegada, por fecha de nacimiento, por criterio del clínico o por preferencia del paciente, NO es aleatorizada. Si la descripción no permite decidirlo, elige 'unclear'.",
+    "language": "en",
+    "question": "¿El estudio descrito es un ensayo controlado aleatorizado?",
+    "labels": ["rct", "not-rct", "unclear"],
+    "content": "Between January 2023 and March 2024 we compared outcomes in two consecutive cohorts of patients undergoing elective hip replacement at a single centre. Patients operated on in the first period received the standard rehabilitation pathway; those operated on in the second period received an enhanced recovery pathway introduced hospital-wide in July 2023. Baseline characteristics were similar between the groups. Length of stay and readmission at thirty days were compared.",
+    "checklist": [
+      { "id": "c1", "text": "La justificación cita la frase concreta del texto que decide la etiqueta." },
+      { "id": "c2", "text": "No se ha usado 'unclear' por pereza: sólo si el texto de verdad no lo dice." }
+    ],
+    "estimatedMinutes": 4,
+    "createdAt": "2026-09-12T06:05:00.000Z"
+  }
+]

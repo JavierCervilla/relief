@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Gate · typecheck + lint + tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint (gate anti-slop, ratchet subido a error)
+        run: npm run lint
+      - name: Tests
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Smoke del binario construido (arranca y anuncia las 5 tools)
+        run: node scripts/smoke.mjs
+
+  mutations:
+    name: Gate · la batería sabe ponerse roja
+    runs-on: ubuntu-latest
+    # Rompe la implementación catorce veces y comprueba que los tests lo cazan. Una suite en verde no
+    # dice nada por sí sola: este job es lo que convierte "45 tests pasan" en "45 tests protegen algo".
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Batería de mutaciones
+        run: npm run mutate
+
+  gates-honestos:
+    name: Gate · los gates saben ponerse rojos
+    runs-on: ubuntu-latest
+    # Un gate con `continue-on-error`, `|| true` o `--advisory` sin declarar es un gate que no muerde,
+    # y no se ve leyendo el YAML por encima. El `--self-test` va primero porque un escáner que no
+    # demuestra saber ponerse rojo no puede dar fe de nadie.
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Self-test del escáner
+        run: bash .claude/skills/gate-lint/scripts/gate-lint.sh --self-test
+      - name: Escanear los gates del repo
+        run: bash .claude/skills/gate-lint/scripts/gate-lint.sh .
+
+  security:
+    name: Guardián · escalera de seguridad (secretos + SAST + deps)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install deps (para npm audit)
+        run: npm ci
+
+      - name: Instalar semgrep (pip)
+        run: pipx install semgrep || pip install --user semgrep
+
+      - name: Instalar gitleaks (binario de release)
+        run: |
+          GL_VER="8.21.2"
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GL_VER}/gitleaks_${GL_VER}_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: Instalar osv-scanner (binario de release)
+        run: |
+          OSV_VER="1.9.2"
+          curl -sSL -o /usr/local/bin/osv-scanner \
+            "https://github.com/google/osv-scanner/releases/download/v${OSV_VER}/osv-scanner_linux_amd64"
+          chmod +x /usr/local/bin/osv-scanner
+          osv-scanner --version
+
+      - name: Las tres herramientas están DE VERDAD en el PATH
+        # `security-gate.sh` falla ABIERTO por diseño: si una herramienta no está, omite su peldaño,
+        # imprime "COBERTURA INCOMPLETA" y sale 0. Eso es correcto en local y catastrófico en CI, donde
+        # el job daría verde con el SAST sin correr. `pipx install` puede salir 0 sin dejar el binario
+        # en el PATH, así que instalar no es lo mismo que tener. Esto lo convierte en rojo.
+        # Lo encontró el verificador: gitleaks y osv-scanner ya se comprobaban, semgrep no.
+        run: |
+          missing=""
+          for tool in gitleaks semgrep osv-scanner; do
+            command -v "$tool" >/dev/null 2>&1 || missing="$missing $tool"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::la escalera omitiría en silencio:$missing"
+            exit 1
+          fi
+          semgrep --version
+
+      - name: Escalera de seguridad (skill security-gate)
+        # Gate DURO en los tres peldaños desde el día uno. El repo nace hoy: no hay CVE heredado que
+        # justifique un `--deps-advisory`, y estrenar el proyecto con un peldaño que no muerde sería
+        # crear la deuda en vez de evitarla. El paso de arriba garantiza que "verde" significa
+        # "escaneado", y no "no se escaneó nada".
+        run: bash .claude/skills/security-gate/scripts/security-gate.sh .
+
+  agent-config:
+    name: Guardián · config del agente (Unicode + scanner)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Anti-tag-smuggling (Unicode)
+        run: node .claude/skills/security-gate/scripts/check-unicode-safety.mjs
+      - name: Config scanner (gate duro)
+        run: node .claude/skills/security-gate/scripts/check-agent-config.mjs
+      - name: Tests de los propios escáneres
+        # Los ficheros van explícitos y no el directorio: el buscador de tests de Node se salta los
+        # directorios que empiezan por `.`, así que `--test .claude/…/tests/` no descubre nada, cae a
+        # tratar la ruta como fichero y muere con MODULE_NOT_FOUND. Verde no por suerte: 49 tests.
+        run: node --test .claude/skills/security-gate/tests/*.test.mjs

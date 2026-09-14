@@ -1,0 +1,15 @@
+# gate-lint · patrones de "gate que no puede ponerse rojo".
+#
+# Formato: <etiqueta>|<regex ERE>
+#   - Se parte en el PRIMER `|`: la etiqueta no puede contener `|`, el regex sí.
+#   - El regex se pasa tal cual a `grep -E`.
+#
+# Los seis patrones son las formas en que un gate deja de morder sin que nadie lo note (ver
+# doctrina_gates_honestos.md). En workflows se buscan TODOS; en scripts de shell solo `tail-1` y
+# `set-plus-e` (ver SCRIPT_SCOPE_LABELS en scripts/gate-lint.sh).
+continue-on-error|continue-on-error: *true
+or-true|\|\| *true
+advisory|--(deps-)?advisory
+tail-1|\| *tail -n? ?1([^0-9]|$)
+set-plus-e|set \+e
+allow-failure|allow-failure
