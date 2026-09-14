@@ -100,6 +100,15 @@ export interface Copy {
     readonly etiqueta: string;
     readonly titulo: string;
     readonly intro: string;
+    /**
+     * Aviso de que la dirección de contacto es todavía un marcador y las dos llamadas a la acción no
+     * llevan a ninguna parte. Se renderiza SÓLO mientras `CORREO_ES_MARCADOR` sea cierto.
+     *
+     * Es obligatorio en el tipo, no opcional: el día que se ponga la dirección real habrá que borrar
+     * el aviso de los dos idiomas a la vez, y un campo opcional permite quitarlo de uno y olvidar el
+     * otro. En esta página eso no es una traducción a medias, es una de las dos versiones mintiendo.
+     */
+    readonly avisoCorreo: string;
     readonly ong: Via;
     readonly oss: Via;
   };

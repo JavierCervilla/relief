@@ -62,6 +62,17 @@ a:hover {
   outline-offset: 3px;
 }
 
+/*
+ * Sobre fondo petróleo el naranja de acción da 2.39:1, por debajo del 3:1 que WCAG 1.4.11 pide a un
+ * indicador de foco. El único enlace del pie se quedaba con un anillo que casi no se ve, justo para
+ * quien navega con teclado. `--accion-en-petroleo` da 5.43:1 y es el mismo color que esa banda ya usa
+ * para sus enlaces, así que no introduce un color nuevo: usa el que le toca.
+ */
+.banda--petroleo :focus-visible,
+.pie :focus-visible {
+  outline-color: var(--accion-en-petroleo);
+}
+
 /* --- Enlace de salto: invisible hasta que recibe foco ---------------------- */
 .saltar {
   position: absolute;
@@ -219,6 +230,12 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  /* Va en la hoja y no en un `style=` inline: este fichero declara en su cabecera que todo color y
+     toda fuente salen de tokens, y dos atributos inline sueltos contradecían esa regla en el único
+     sitio donde nadie los buscaría. */
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .paso {
@@ -322,10 +339,17 @@ a:hover {
   border-color: var(--accion);
 }
 
-/* El no elegido se atenúa: es el único sitio donde el movimiento informa. */
+/*
+ * El no elegido se atenúa: es el único sitio donde el movimiento informa.
+ *
+ * Atenuado no puede querer decir invisible. Con `--arena-borde` el contorno daba 1.26:1 sobre la banda
+ * honda y el botón dejaba de leerse como un control —fondo transparente, borde imperceptible—, que es
+ * precisamente lo que WCAG 1.4.11 prohíbe. `--borde-control` da 3.10:1 y sigue leyéndose como
+ * secundario frente al elegido, que va en naranja lleno.
+ */
 .bifurcacion[data-elegida] .boton[aria-expanded="false"] {
   color: var(--tinta-suave);
-  border-color: var(--arena-borde);
+  border-color: var(--borde-control);
 }
 
 .ficha {
@@ -335,6 +359,10 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 22px;
+}
+
+.ficha__intro {
+  font-size: 15px;
 }
 
 .ficha__filas {
@@ -538,4 +566,21 @@ a:hover {
   .estado {
     padding-left: 20px;
   }
+}
+
+/*
+ * El aviso de que la dirección de contacto es un marcador.
+ *
+ * Va en ocre, el color que esta página reserva para «esto es un estado, no una acción» — el mismo del
+ * §5 «dónde estamos». No en naranja: el naranja significa que algo se puede pulsar, y aquí lo que se
+ * dice es justo lo contrario.
+ */
+.ficha__aviso {
+  display: block;
+  margin-top: 10px;
+  font-weight: 600;
+  color: var(--tinta);
+  border-left: 4px solid var(--ocre);
+  padding-left: 12px;
+  max-width: 58ch;
 }

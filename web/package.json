@@ -10,8 +10,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "fonts": "node scripts/fetch-fonts.mjs",
-    "gate": "npm run typecheck && npm run antislop && npm run build && npm test",
-    "antislop": "bash ../.claude/skills/frontend-anti-slop/scripts/audit-anti-slop.sh src"
+    "gate": "npm run typecheck && npm run antislop && npm run sinks && npm run build && npm test && npm run mutate",
+    "antislop": "bash ../.claude/skills/frontend-anti-slop/scripts/audit-anti-slop.sh src",
+    "sinks": "node scripts/check-astro-sinks.mjs",
+    "mutate": "node scripts/mutate.mjs --self-test && node scripts/mutate.mjs"
   },
   "license": "AGPL-3.0-or-later",
   "dependencies": {

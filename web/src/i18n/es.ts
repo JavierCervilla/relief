@@ -96,6 +96,8 @@ export const es: Copy = {
     titulo: "¿Desde dónde escribes?",
     intro:
       "Lo que necesitamos de una organización y lo que necesitamos de un proyecto de software no se parecen en nada. Elige y te cuento sólo lo tuyo.",
+    avisoCorreo:
+      "Ojo: esta dirección es todavía un marcador y el correo no llegará a ninguna parte. La web está publicada antes que el buzón, y prefiero decirlo a que escribas al vacío.",
 
     ong: {
       boton: "Represento a una organización",

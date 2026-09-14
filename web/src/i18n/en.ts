@@ -99,6 +99,8 @@ export const en: Copy = {
     titulo: "Where are you writing from?",
     intro:
       "What we need from an organisation and what we need from a software project have nothing in common. Pick one and I'll only tell you your half.",
+    avisoCorreo:
+      "Heads-up: this address is still a placeholder and mail sent to it will go nowhere. The site is up before the mailbox is, and I would rather say so than have you write into the void.",
 
     ong: {
       boton: "I represent an organisation",

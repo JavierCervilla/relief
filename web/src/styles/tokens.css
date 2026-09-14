@@ -11,6 +11,12 @@
  *   3. Arena    = el papel, en dos profundidades que alternan por sección. Ese ritmo de bandas es lo
  *                 que quita la sobriedad SIN meter un degradado, que sigue vetado.
  *
+ * Ojo con --arena-borde y --borde-control: parecen el mismo color con dos nombres y no lo son. El
+ * primero separa (1.26:1 sobre arena honda, que para una línea decorativa sobra); el segundo DIBUJA EL
+ * LÍMITE DE UN CONTROL, y ahí WCAG 1.4.11 exige 3:1 — con el primero, el botón no elegido de la
+ * bifurcación se quedaba sin contorno perceptible y dejaba de parecer un botón. Lo midió el
+ * verificador en RELE-3; usar el token de filete para un control era el error.
+ *
  * Los contrastes del margen están MEDIDOS, no estimados: `tests/contraste.test.ts` PARSEA este fichero,
  * convierte cada OKLCH a sRGB y recalcula los 17 pares que la página pinta de verdad. Si alguien
  * retoca un token y rompe la legibilidad, la suite se pone roja. El par más ajustado es --accion-viva
@@ -27,6 +33,7 @@
   --arena: oklch(0.958 0.02 80);            /* fondo por defecto                  */
   --arena-honda: oklch(0.918 0.03 74);      /* bandas §1 y §4, celdas de los topes */
   --arena-borde: oklch(0.845 0.022 74);     /* filetes y separadores              */
+  --borde-control: oklch(0.6 0.022 74);     /* borde de un control INTERACTIVO    */
 
   /* --- Petróleo: estructura ---------------------------------------------- */
   --petroleo: oklch(0.285 0.048 196);       /* fondo del §2 y del pie; titulares  */

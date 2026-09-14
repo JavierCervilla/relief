@@ -65,6 +65,19 @@ function trocear(css) {
 
 async function main() {
   await mkdir(DESTINO_FUENTES, { recursive: true });
+  /**
+   * Una URL de Google ya bajada → el nombre local con el que se guardó.
+   *
+   * Google sirve **la misma URL para varios pesos** cuando la familia es variable: `Archivo:wght@400;600`
+   * devuelve dos `@font-face` con distinto `font-weight` y el MISMO `src`. Sin esto, el script bajaba
+   * el fichero dos veces y lo guardaba con dos nombres — 93 KB duplicados de 202 KB, o sea casi el
+   * doble de fuentes de las que la página necesita. Lo cazó `seguridad` comparando checksums.
+   *
+   * Deduplicar por URL reproduce exactamente lo que hace el CSS de Google: un fichero, dos
+   * declaraciones de peso. El navegador instancia la variable al peso del descriptor, así que la
+   * seminegrita sigue siendo seminegrita.
+   */
+  const yaBajadas = new Map();
   const piezas = [
     "/*",
     " * Fuentes auto-alojadas. GENERADO por `scripts/fetch-fonts.mjs` — no editar a mano.",
@@ -90,10 +103,17 @@ async function main() {
       if (urlFuente === undefined) throw new Error(`sin url en ${familia.nombre}/${subconjunto}`);
 
       const peso = /font-weight:\s*(\d+)/.exec(regla)?.[1] ?? "400";
-      const nombreArchivo = `${familia.archivo}-${peso}-${subconjunto}.woff2`;
-      const bytes = Buffer.from(await (await bajar(urlFuente)).arrayBuffer());
-      await writeFile(join(DESTINO_FUENTES, nombreArchivo), bytes);
-      total += bytes.length;
+      let nombreArchivo = yaBajadas.get(urlFuente);
+      if (nombreArchivo === undefined) {
+        nombreArchivo = `${familia.archivo}-${peso}-${subconjunto}.woff2`;
+        const bytes = Buffer.from(await (await bajar(urlFuente)).arrayBuffer());
+        await writeFile(join(DESTINO_FUENTES, nombreArchivo), bytes);
+        total += bytes.length;
+        yaBajadas.set(urlFuente, nombreArchivo);
+        process.stdout.write(`  ${nombreArchivo.padEnd(34)} ${(bytes.length / 1024).toFixed(1)} KB\n`);
+      } else {
+        process.stdout.write(`  ${`(peso ${peso})`.padEnd(34)} reutiliza ${nombreArchivo}\n`);
+      }
 
       piezas.push(
         regla
@@ -101,7 +121,6 @@ async function main() {
           .replace(/;\s*}/, ";\n}"),
         "",
       );
-      process.stdout.write(`  ${nombreArchivo.padEnd(34)} ${(bytes.length / 1024).toFixed(1)} KB\n`);
     }
   }
 

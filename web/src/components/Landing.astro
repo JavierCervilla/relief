@@ -63,9 +63,16 @@ const vias: readonly { id: string; via: Via }[] = [
       </a>
     </nav>
 
-    <header class="seccion">
+    <main>
+      <header class="seccion">
       <div class="marcador"><span class="marcador__texto">{t.cabecera.licencia}</span></div>
-      <div class="seccion__cuerpo" id="contenido">
+      {/*
+        `tabindex="-1"` no es decorativo: sin él, Safari y VoiceOver dejan el foco donde estaba al
+        pulsar el enlace de salto, y Chrome/Firefox sólo mueven el punto de navegación secuencial.
+        Para una página cuya audiencia declarada incluye a gente de accesibilidad, el enlace de salto
+        es lo primero que se prueba. Lo cazó el verificador en RELE-3.
+      */}
+      <div class="seccion__cuerpo" id="contenido" tabindex="-1">
         <h1 class="cabecera__nombre">Relevo</h1>
         <p class="cabecera__lede">{t.cabecera.lede}</p>
         <p class="cabecera__entradilla">{t.cabecera.entradilla}</p>
@@ -83,7 +90,12 @@ const vias: readonly { id: string; via: Via }[] = [
         <div class="seccion__cuerpo">
           <h2>{t.queEs.titulo}</h2>
           <p>{t.queEs.intro}</p>
-          <ol class="pasos" style="list-style: none; padding: 0; margin: 0;">
+          {/*
+            `role="list"` con `list-style: none` puesto desde el CSS: en Safari+VoiceOver quitar las
+            viñetas ELIMINA la semántica de lista, y los tres pasos dejan de anunciarse como «lista de
+            3 elementos» — que es justo la información que hace entendible una secuencia.
+          */}
+          <ol class="pasos" role="list">
             {
               t.queEs.pasos.map((paso, i) => (
                 <li class="paso">
@@ -170,7 +182,7 @@ const vias: readonly { id: string; via: Via }[] = [
             vias.map(({ id, via }) => (
               <div class="ficha" id={`ficha-${id}`} data-ficha={id}>
                 <h3>{via.titulo}</h3>
-                {via.intro !== undefined && <p style="font-size: 15px;">{via.intro}</p>}
+                {via.intro !== undefined && <p class="ficha__intro">{via.intro}</p>}
                 <div class="ficha__filas">
                   {via.filas.map((fila) => (
                     <>
@@ -184,6 +196,15 @@ const vias: readonly { id: string; via: Via }[] = [
                   <a class="cta" href={construirMailto(via.correo)}>{via.cta}</a>
                   <div class="ficha__copia">
                     {via.copiaAntes} <span class="ficha__correo">{CORREO_CONTACTO}</span>
+                    {/*
+                      Mientras la dirección sea el marcador, las dos llamadas a la acción están
+                      MUERTAS. Publicar eso sin decirlo deja a alguien escribiendo a un buzón que no
+                      existe y creyendo que nos ha escrito — en una página cuyo argumento entero es no
+                      prometer lo que no hay. `config.ts` ya afirmaba que este aviso existía; no
+                      existía, y el import de `CORREO_ES_MARCADOR` llevaba sin usarse desde el primer
+                      commit.
+                    */}
+                    {CORREO_ES_MARCADOR && <strong class="ficha__aviso">{t.bifurcacion.avisoCorreo}</strong>}
                   </div>
                 </div>
               </div>
@@ -207,6 +228,8 @@ const vias: readonly { id: string; via: Via }[] = [
         </div>
       </div>
     </section>
+
+    </main>
 
     <footer class="pie">
       <span>{t.pie.licencia}</span>

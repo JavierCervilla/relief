@@ -18,7 +18,9 @@ function desmontar(url: string): { direccion: string; asunto: string; cuerpo: st
   const m = /^mailto:([^?]+)\?subject=([^&]*)&body=(.*)$/.exec(url);
   if (m === null) throw new Error(`no parece un mailto: ${url}`);
   return {
-    direccion: m[1] ?? "",
+    // La dirección va percent-encoded como el resto de la URL (RFC 6068), así que se decodifica para
+    // comparar contra la constante.
+    direccion: decodeURIComponent(m[1] ?? ""),
     asunto: decodeURIComponent(m[2] ?? ""),
     cuerpo: decodeURIComponent(m[3] ?? ""),
   };
@@ -53,6 +55,30 @@ describe("cada mailto lleva SU asunto y SU cuerpo", () => {
     const cruceDeIdioma = construirMailto(en.bifurcacion.oss.correo);
     expect(correcto).not.toBe(cruceDeVia);
     expect(correcto).not.toBe(cruceDeIdioma);
+  });
+});
+
+describe("la dirección no puede colar cabeceras", () => {
+  it("una dirección con `?bcc=` no produce un mailto con BCC", () => {
+    // Reproducción del hallazgo de `seguridad`, ejercitando `construirMailto` DE VERDAD.
+    //
+    // La primera versión de este aserto montaba la URL a mano con `encodeURIComponent` y comprobaba
+    // que salía bien: probaba la cadena del test, no la función. La batería de mutantes lo cazó —
+    // quitar el `encodeURIComponent` de producción no ponía roja ninguna suite (M19).
+    //
+    // La dirección de abajo PASA los tres tests de `correo.test.ts`: un solo `@` literal (el de
+    // `%40` no cuenta) y dominio con TLD. Por eso el validador no basta y la codificación sí.
+    const envenenada = "hola@relevo.org?bcc=x%40evil.tld&z=q.io";
+    const url = construirMailto(es.bifurcacion.ong.correo, envenenada);
+
+    const cabeceras = [...url.matchAll(/[?&]([a-z-]+)=/gi)].map(([, k]) => k?.toLowerCase());
+    expect(cabeceras, "la URL sólo puede llevar las cabeceras que ponemos nosotros").toEqual([
+      "subject",
+      "body",
+    ]);
+    expect(url).not.toMatch(/[?&]bcc=/i);
+    // Y la dirección sigue siendo recuperable entera por quien la lea bien.
+    expect(desmontar(url).direccion).toBe(envenenada);
   });
 });
 

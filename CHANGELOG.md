@@ -5,6 +5,84 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No publicado]
 
+### Corregido — la ronda del Guardián sobre la landing (4 bloqueantes + 5 de seguridad)
+
+El `verificador` rompió la implementación catorce veces y **seis mutaciones sobrevivieron** con la
+suite en 54/54 verde. Dos violaban restricciones que el plan marca como no negociables. Lo que sigue
+es lo que hacía falta para que esos verdes significaran algo.
+
+**El oráculo de cifras era una lista blanca de dígitos, y eso no es un veto.** Entre los ordinales
+`§1…§5` y los tres topes, la lista acababa admitiendo `0,1,2,3,4,5,10` **estuvieran donde
+estuvieran**: «Ya hay 10 organizaciones a bordo y 3 voluntarios activos» pasaba el gate entero. Ahora
+el oráculo es **por contexto** — se borran del texto los pocos fragmentos donde una cifra es legítima
+(cada tope pegado a su etiqueta, los párrafos del estudio, la licencia, los ordinales) y cualquier
+dígito que sobreviva es un intruso. Estrenarlo reclamó dos contextos que nadie había declarado, que es
+justo la diferencia.
+
+**Y no miraba dónde había que mirar.** `textoVisible()` borra la etiqueta entera, atributos incluidos,
+así que tres cifras colaron por canales que no son el cuerpo del texto: la `meta description` (lo que
+enseña un buscador y cualquier tarjeta social), un `aria-label` (lo que oye un lector de pantalla) y
+el cuerpo de un `mailto:` (que además viaja percent-encoded y ni casaba con `\d`). Son tres poblaciones
+distintas y ahora cada una tiene su regla y **su propio caso de «sabe ponerse rojo»** — el anterior
+sólo ejercitaba la única ruta que ya funcionaba.
+
+**El inglés podía perder la frase de honestidad.** `claves()` no dejaba rastro de los elementos
+*string* de un array: los arrays de objetos sí, los de cadenas no. Borrar del inglés «no hay
+voluntarios activos, ni tareas completadas, ni ninguna organización a bordo» dejaba la suite verde —
+literalmente lo que `types.ts` promete que no puede pasar.
+
+**Dos fallos de contraste reales, en estados de interacción.** El borde del botón atenuado daba
+**1.26:1** sobre la banda honda (usaba el token de *filete*, no uno de *control*) y el botón dejaba de
+leerse como pulsable; el anillo de foco del pie daba **2.39:1** sobre petróleo. Los dos por debajo del
+3:1 de WCAG 1.4.11, y los dos invisibles para el test porque `PARES` describía «cada par que la página
+pinta» sin incluir ni un estado de interacción: el gate medía su propia población.
+
+**La mejora progresiva no estaba probada, sólo declarada.** El test medía «la cadena está en el
+fichero», no «se ve sin JavaScript»: servir las fichas ya plegadas, o borrar la regla que oculta los
+botones, dejaba la suite verde con la página rota para quien no ejecuta scripts.
+
+**Accesibilidad:** añadidos `<main>`, `tabindex="-1"` en el destino del enlace de salto (sin él Safari
+y VoiceOver no saltan) y `role="list"` en los pasos (`list-style: none` elimina la semántica de lista
+en VoiceOver). Fuera los dos `style=` inline, que contradecían la regla que `landing.css` declara
+sobre sí mismo.
+
+### Añadido — batería de mutantes para `web/`, con self-test
+
+El paquete nuevo no heredaba una decisión que este repo ya había tomado: una suite verde sin mutantes
+no cuenta. **16 mutaciones, todas cazadas**, incluidas las seis que sobrevivieron a la primera ronda.
+
+Estrenarla encontró **cinco supervivientes más** en arreglos que acababan de hacerse: los dos tokens
+de contraste podían revertirse al valor malo sin que nada se pusiera rojo (el test medía el token, no
+que la hoja lo usara), el aviso del correo podía borrarse en silencio, y —el peor— **el test de
+inyección de cabeceras del `mailto:` montaba la URL a mano en vez de llamar a `construirMailto`**:
+probaba la cadena del test, no la función. Para arreglarlo la dirección pasa a ser un parámetro con
+valor por defecto; sin poder inyectar una envenenada, el invariante era imposible de testear.
+
+### Seguridad — cinco hallazgos de `seguridad`, ninguno bloqueante, todos cerrados
+
+- **Semgrep no tiene lenguaje Astro**: `Landing.astro` no aparecía ni en `scanned` ni en `skipped`, o
+  sea que el único fichero del paquete con markup y manipulación del DOM era exactamente el que el SAST
+  no miraba, y el peldaño reportaba verde sobre él. Añadido `check-astro-sinks.mjs` como gate
+  determinista (visto en rojo). Verde tiene que significar escaneado.
+- **`construirMailto` no codificaba la dirección**: con `hola@relevo.org?bcc=x%40evil.tld` —que pasa el
+  validador de `config.ts`, porque `%40` no es un `@` literal— salía un BCC funcional en las dos
+  llamadas a la acción.
+- **Dos pares de fuentes eran el mismo fichero**: Google sirve la misma URL para varios pesos cuando la
+  familia es variable. El script la bajaba dos veces con dos nombres. **202 KB → 111,5 KB**, y ahora un
+  test compara checksums para que no vuelva a pasar.
+- **`startsWith("https://github.com")`** daba por propio `https://github.com.evil.tld`. Es el mismo bug
+  que este repo arregló en el consentimiento del servidor, reintroducido en los tests de la web. Ahora
+  se compara `URL.hostname`.
+- **`sharp` + `libvips` + `libheif` instalados para una página con cero imágenes**, y es justo donde
+  vivían las CVE que forzaron la subida a Astro 7. Desactivado el servicio de imagen.
+
+### Corregido — el gate de la raíz se rompía en cuanto alguien construía la web
+
+`npm run lint` de la raíz salía 1 en local y verde en CI. `astro sync` genera `web/.astro/*.d.ts` con
+`any`, y el job `gate` hace `npm ci` en la raíz sin ejecutar Astro nunca, así que allí ese directorio no
+existe. Un gate cuyo color depende de si alguien ha corrido un build en otro paquete no es un gate.
+
+
 ### Añadido — la landing pública, bilingüe (RELE-3)
 
 `web/`: sitio Astro estático, paquete npm propio para que el build de la web y el del servidor MCP no

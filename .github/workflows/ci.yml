@@ -89,6 +89,13 @@ jobs:
       - run: npm ci
       - name: Typecheck (.astro incluidos)
         run: npm run typecheck
+      - name: Sinks peligrosos en los `.astro`
+        # Semgrep NO tiene lenguaje Astro: `seguridad` comprobó que `Landing.astro` no aparece ni en
+        # `scanned` ni en `skipped` del JSON. O sea que el único fichero del paquete con markup y
+        # manipulación del DOM es justo el que el SAST no mira, y el peldaño 2 de la escalera daba
+        # verde sobre él. Verde tiene que significar escaneado.
+        run: npm run sinks
+
       - name: Linter anti-slop de frontend
         # El script está VENDORIZADO en `.claude/skills/frontend-anti-slop/`, no se invoca desde el
         # repo del framework. La primera versión llamaba a la ruta del framework, que en CI no existe:
@@ -102,6 +109,13 @@ jobs:
         # esa clase de fallo — tres campos añadidos a una salida sin tocar el renderizador, así que el
         # modelo los recibía y la persona no los veía nunca.
         run: npm test
+      - name: La batería de mutantes sabe ponerse roja, y ninguna sobrevive
+        # El paquete `web/` nació SIN batería, y el verificador rompió la implementación catorce veces:
+        # seis mutaciones sobrevivieron con la suite en 54/54 verde, dos de ellas violando restricciones
+        # que el plan marca como no negociables. Este repo ya había decidido que una suite verde sin
+        # mutantes no cuenta (job `mutations` del servidor); el paquete nuevo no heredaba la decisión.
+        run: npm run mutate
+
       - name: Auditoría de dependencias de la web
         # `security-gate.sh .` YA cubre este lockfile: se comprobó que osv-scanner recursivo lo
         # encuentra (377 paquetes). Lo que NO llega es su `npm audit`, que corre sólo en la raíz del
@@ -120,8 +134,12 @@ jobs:
         run: |
           set -euo pipefail
           encontradas=$(find dist/fonts -name '*.woff2' | wc -l)
-          echo "woff2 en dist/: $encontradas"
-          test "$encontradas" -eq 5
+          unicas=$(sha256sum dist/fonts/*.woff2 | awk '{print $1}' | sort -u | wc -l)
+          echo "woff2 en dist/: $encontradas (contenidos distintos: $unicas)"
+          test "$encontradas" -gt 0
+          # Y ninguno repetido: Google sirve la misma URL para varios pesos de una familia variable, y
+          # el script llegó a guardarla dos veces con dos nombres (93 KB muertos de 202).
+          test "$encontradas" -eq "$unicas" 
 
   security:
     name: Guardián · escalera de seguridad (secretos + SAST + deps)

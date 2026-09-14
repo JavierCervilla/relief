@@ -43,13 +43,29 @@ function textos(valor: unknown): string[] {
  */
 const VACIO_LEGITIMO = /^bifurcacion\.(ong|oss)\.correo\.cuerpo\[\d+\]$/;
 
-/** Las rutas de todas las claves de un objeto, en orden estable. */
+/**
+ * Las rutas de todas las claves de un objeto, en orden estable.
+ *
+ * OJO al `salida.push(ruta)` de los elementos de array: sin él, un elemento que sea una CADENA no
+ * dejaba rastro, porque la primera línea devolvía sin empujar para cualquier no-objeto. Los arrays de
+ * objetos (`pasos`, `puntos`, `filas`, `topes`) sí quedaban cubiertos; los de cadenas —`parrafos`,
+ * `correo.cuerpo`, `bloqueCodigo`— no.
+ *
+ * Lo que eso permitía, reproducido por el verificador con la suite en 54/54 verde: **borrar del inglés
+ * la frase «no hay voluntarios activos, ni tareas completadas, ni ninguna organización a bordo»** y que
+ * no se pusiera rojo nada. El castellano la decía y el inglés podía dejar de decirla — que es
+ * literalmente lo que `types.ts` promete que no puede pasar.
+ */
 function claves(valor: unknown, prefijo = "", salida: string[] = []): string[] {
-  if (valor === null || typeof valor !== "object") return salida;
   if (Array.isArray(valor)) {
-    valor.forEach((v, i) => claves(v, `${prefijo}[${i}]`, salida));
+    valor.forEach((v, i) => {
+      const ruta = `${prefijo}[${i}]`;
+      salida.push(ruta);
+      claves(v, ruta, salida);
+    });
     return salida;
   }
+  if (valor === null || typeof valor !== "object") return salida;
   for (const [k, v] of Object.entries(valor)) {
     const ruta = prefijo === "" ? k : `${prefijo}.${k}`;
     salida.push(ruta);
@@ -78,6 +94,16 @@ describe("ninguna organización real se nombra en la página", () => {
 });
 
 describe("los dos idiomas dicen lo mismo, o uno de los dos miente", () => {
+  it("sabe ponerse rojo si a un idioma le falta un PÁRRAFO, no sólo una clave", () => {
+    // El caso concreto que sobrevivía: un elemento string dentro de un array. Se ejercita contra una
+    // copia mutilada, no contra producción.
+    // `Copy` declara los arrays `readonly`, así que el cast pasa por `unknown`: mutilar la copia es
+    // justo lo que este test necesita hacer, y el tipo está bien al impedirlo en producción.
+    const mutilado = structuredClone(en) as unknown as { estado: { parrafos: string[] } };
+    mutilado.estado.parrafos.pop();
+    expect(claves(mutilado)).not.toEqual(claves(es));
+  });
+
   it("tienen exactamente la misma forma, incluidos los elementos de cada lista", () => {
     // El tipo `Copy` ya obliga a que no falte una CLAVE. Lo que el tipo no ve es que a un idioma le
     // falte un PASO, una fila de la ficha o un párrafo: las listas son `readonly T[]` y una lista más
@@ -92,8 +118,14 @@ describe("los dos idiomas dicen lo mismo, o uno de los dos miente", () => {
         expect(t.trim(), `${codigo}: texto vacío en ${ruta}`).not.toBe("");
       }
     }
-    // Lo que SÍ puede coincidir entre idiomas: los topes, las etiquetas de licencia y el bloque de
-    // código, que es técnico. Todo lo demás repetido sería copiar y pegar sin traducir.
+    // Lo que SÍ puede coincidir entre idiomas, declarado UNO A UNO. Todo lo demás repetido sería
+    // copiar y pegar sin traducir.
+    //
+    // Antes había además un filtro `t.length > 24`, y con él esta lista era CÓDIGO MUERTO: sus ocho
+    // entradas miden entre 1 y 21 caracteres, así que el filtro las excluía a todas antes de que la
+    // lista llegara a opinar. El comentario explicaba un mecanismo que no se ejecutaba nunca. Sin el
+    // umbral, la lista pasa a sostener el test de verdad: cada coincidencia entre idiomas tiene que
+    // estar justificada aquí, corta o larga.
     const permitidoIdentico = new Set([
       "3",
       "10",
@@ -103,13 +135,14 @@ describe("los dos idiomas dicen lo mismo, o uno de los dos miente", () => {
       "es",
       "en",
       "# AI-CONTRIBUTIONS.md",
+      "",
     ]);
     const esTextos = textos(es);
     const enTextos = textos(en);
-    const identicos = esTextos.filter(
-      (t, i) => enTextos[i] === t && !permitidoIdentico.has(t) && t.length > 24,
-    );
-    expect(identicos, "textos largos idénticos en los dos idiomas: ¿sin traducir?").toEqual([]);
+    const identicos = [
+      ...new Set(esTextos.filter((t, i) => enTextos[i] === t && !permitidoIdentico.has(t))),
+    ];
+    expect(identicos, "textos idénticos en los dos idiomas: ¿sin traducir?").toEqual([]);
   });
 });
 

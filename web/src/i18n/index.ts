@@ -37,9 +37,27 @@ export const CODIGOS: readonly CodigoIdioma[] = Object.keys(IDIOMAS) as CodigoId
  *
  * `encodeURIComponent` no es cosmética: los cuerpos llevan saltos de línea, tildes y signos de
  * interrogación, y sin codificar el cliente de correo se come el cuerpo a partir del primer `&`.
+ *
+ * **Y la dirección se codifica igual que el resto.** Iba cruda, y `seguridad` lo reprodujo: con
+ * `CORREO_CONTACTO = "hola@relevo.org?bcc=x%40evil.tld&z=q.io"` —que pasa el validador de
+ * `config.ts`, porque `%40` no es un `@` literal— salía un BCC silencioso y funcional en las dos
+ * llamadas a la acción de la página. Percent-encoded (`hola%40relevo.org`) es válido por RFC 6068 y
+ * cierra la inyección de cabeceras de raíz.
+ *
+ * Importa QUIÉN escribe ese valor: `config.ts` está diseñado para que una persona pegue ahí una
+ * dirección, o sea alguien que no está pensando en semántica de URL. La defensa no puede depender de
+ * que lo piense.
+ *
+ * `direccionCruda` es un parámetro con valor por defecto y NO un adorno: con la dirección leída
+ * directamente de la constante, el invariante era **imposible de testear**. La constante de hoy no
+ * tiene caracteres especiales, así que codificarla o no da el mismo resultado, y la batería de
+ * mutantes lo demostró — quitar el `encodeURIComponent` no ponía roja ninguna suite. Un aserto
+ * escribiendo la URL a mano tampoco sirve: ejercita la cadena del test, no esta función. Poder
+ * inyectar una dirección envenenada es lo que convierte la promesa en gate.
  */
-export function construirMailto(correo: Correo): string {
+export function construirMailto(correo: Correo, direccionCruda: string = CORREO_CONTACTO): string {
+  const direccion = encodeURIComponent(direccionCruda);
   const asunto = encodeURIComponent(correo.asunto);
   const cuerpo = encodeURIComponent(correo.cuerpo.join("\n"));
-  return `mailto:${CORREO_CONTACTO}?subject=${asunto}&body=${cuerpo}`;
+  return `mailto:${direccion}?subject=${asunto}&body=${cuerpo}`;
 }

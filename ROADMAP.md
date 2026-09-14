@@ -42,6 +42,10 @@ la primera persona interesada.
       ningún nombre de organización, ninguna cifra de actividad
 - [x] Bifurcación por mejora progresiva: sin JavaScript las dos fichas se sirven abiertas
 - [x] Linter anti-slop de frontend vendorizado en el repo, mordiendo en CI
+- [x] **Batería de mutantes propia** (16 mutaciones, con self-test): el paquete nuevo no heredaba la
+      decisión de que una suite verde sin mutantes no cuenta
+- [x] Chequeo determinista de sinks en los `.astro`, porque semgrep no tiene lenguaje Astro y el único
+      fichero con markup quedaba fuera del SAST
 
 ### Lo que la landing NO hace todavía
 
