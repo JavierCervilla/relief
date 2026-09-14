@@ -32,6 +32,8 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: Smoke del binario construido (arranca y anuncia las 5 tools)
+        run: node scripts/smoke.mjs
 
   mutations:
     name: Gate · la batería sabe ponerse roja

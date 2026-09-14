@@ -12,15 +12,16 @@
     "relevo-mcp": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "gate": "npm run typecheck && npm run lint && npm test && npm run mutate",
-    "mutate": "node scripts/mutate.mjs"
+    "gate": "npm run typecheck && npm run lint && npm test && npm run mutate && npm run smoke",
+    "mutate": "node scripts/mutate.mjs",
+    "smoke": "npm run build && node scripts/smoke.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
