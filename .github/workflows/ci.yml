@@ -116,4 +116,7 @@ jobs:
       - name: Config scanner (gate duro)
         run: node .claude/skills/security-gate/scripts/check-agent-config.mjs
       - name: Tests de los propios escáneres
-        run: node --test .claude/skills/security-gate/tests/
+        # Los ficheros van explícitos y no el directorio: el buscador de tests de Node se salta los
+        # directorios que empiezan por `.`, así que `--test .claude/…/tests/` no descubre nada, cae a
+        # tratar la ruta como fichero y muere con MODULE_NOT_FOUND. Verde no por suerte: 49 tests.
+        run: node --test .claude/skills/security-gate/tests/*.test.mjs
