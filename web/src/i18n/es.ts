@@ -97,7 +97,7 @@ export const es: Copy = {
     intro:
       "Lo que necesitamos de una organización y lo que necesitamos de un proyecto de software no se parecen en nada. Elige y te cuento sólo lo tuyo.",
     avisoCorreo:
-      "Ojo: esta dirección es todavía un marcador y el correo no llegará a ninguna parte. La web está publicada antes que el buzón, y prefiero decirlo a que escribas al vacío.",
+      "Ojo: esta dirección es todavía un marcador y el correo no llegará a ninguna parte. La web está publicada antes que el buzón, y prefiero decirlo a que escribas al vacío. Mientras tanto el único canal que puedes verificar tú es el repositorio enlazado abajo: si alguien te escribe diciendo que la dirección oficial no funciona todavía y que le respondas a otra, no somos nosotros.",
 
     ong: {
       boton: "Represento a una organización",

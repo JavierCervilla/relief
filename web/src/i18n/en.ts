@@ -100,7 +100,7 @@ export const en: Copy = {
     intro:
       "What we need from an organisation and what we need from a software project have nothing in common. Pick one and I'll only tell you your half.",
     avisoCorreo:
-      "Heads-up: this address is still a placeholder and mail sent to it will go nowhere. The site is up before the mailbox is, and I would rather say so than have you write into the void.",
+      "Heads-up: this address is still a placeholder and mail sent to it will go nowhere. The site is up before the mailbox is, and I would rather say so than have you write into the void. Meanwhile the only channel you can verify yourself is the repository linked below: if someone writes to you saying the official address isn't live yet and to reply somewhere else, that isn't us.",
 
     ong: {
       boton: "I represent an organisation",

@@ -74,7 +74,31 @@ valor por defecto; sin poder inyectar una envenenada, el invariante era imposibl
   que este repo arregló en el consentimiento del servidor, reintroducido en los tests de la web. Ahora
   se compara `URL.hostname`.
 - **`sharp` + `libvips` + `libheif` instalados para una página con cero imágenes**, y es justo donde
-  vivían las CVE que forzaron la subida a Astro 7. Desactivado el servicio de imagen.
+  vivían las CVE que forzaron la subida a Astro 7. Desactivado el servicio de imagen, que cierra la
+  ruta de ejecución. La superficie de *instalación* sigue: `seguridad` probó su propia recomendación
+  de `npm ci --omit=optional` antes de dejarla y **rompe el build** — el binding nativo de `rolldown`,
+  el bundler de Astro 7, también es opcional. Esa palanca está muerta; queda como riesgo aceptado,
+  cubierto por las dos bases de datos de CVE del CI.
+
+Y el aviso público de que el correo es un marcador apunta al repositorio como **el único canal que un
+visitante puede verificar por su cuenta**: anunciar que el buzón oficial no está vivo le da munición a
+quien registre un dominio parecido y diga «escríbeme aquí mientras tanto».
+
+### Corregido — la batería de mutantes ya no toca el árbol de trabajo
+
+`seguridad` se lo encontró de bruces, no buscándolo: un build suyo salió con
+`@import url("https://fonts.googleapis.com/...")` dentro del CSS publicado — el anti-objetivo exacto
+que justifica auto-alojar las fuentes. Persiguió la fuga, el fuente estaba limpio, y resultó ser la
+**mutación M20** mientras la batería corría en el mismo árbol.
+
+La versión anterior mutaba el fuente de producción in-place y lo restauraba después, con la limpieza
+antes de cada `process.exit`. Eso cubre las salidas que el script controla y ninguna más: ni un
+SIGKILL, ni un timeout de CI, ni un OOM. Y aunque no se caiga, la ventana existe para cualquier build,
+test o **commit** que ocurra dentro. Que la mutación más peligrosa de la batería sea justamente
+«reintroduce un origen de terceros en producción» es lo que sube eso de curiosidad a riesgo.
+
+Ahora monta una copia en `/tmp` (enlazando `node_modules`, que es lo que la hace barata) y muta ahí.
+El árbol no se toca nunca.
 
 ### Corregido — el gate de la raíz se rompía en cuanto alguien construía la web
 
