@@ -5,6 +5,25 @@ Este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [No publicado]
 
+### Añadido — segunda vía: proyectos open source
+
+- **Las tareas pueden venir de proyectos open source**, no sólo de ONGs, con **consentimiento en dos
+  niveles**: opt-in del proyecto (URL comprobable) para todo, y pre-aprobación de la issue concreta para
+  código. Es la política que Ghostty publicó en enero de 2026, escrita como esquema en vez de como norma:
+  una tarea sin procedencia **no se puede construir**.
+- **Tipo de tarea `patch`**, sólo desde una fuente open source, con tres frenos que responden a quejas
+  medidas de los mantenedores: **un parche por sesión**, **`testedHow` obligatorio** (qué ejecutaste y
+  qué viste, antes y después) y una **frase de divulgación** que redacta el servidor para pegar tal cual.
+  Relevo **nunca** abre el PR: lo abre la persona.
+- **Filtro por vía** en `list_tasks` (`sourceKind`), porque «clasificar» ahora puede ser triar issues o
+  cribar estudios clínicos y no es lo mismo para quien elige en qué gasta su rato.
+
+### Cambiado
+
+- **Contrato de tarea (incompatible)**: `org: string` desaparece en favor de `source`, que declara la
+  procedencia y el permiso. También la vía ONG tiene que nombrar ahora su acuerdo, que hasta ahora era
+  implícito. Un campo opcional de consentimiento es un consentimiento que se olvida.
+
 ### Corregido
 
 - **Bypass de la cuota por concurrencia.** Comprobar el límite y guardar el claim eran dos pasos con

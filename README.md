@@ -1,6 +1,7 @@
 # Relevo
 
-**Una cola de micro-tareas de ONGs que un voluntario consume desde su propia sesión de Claude Code.**
+**Una cola de micro-tareas de ONGs y de proyectos open source que un voluntario consume desde su propia
+sesión de Claude Code.**
 
 Relevo no es un proxy de inferencia. **Nunca** recibe, almacena ni enruta credenciales de Claude, de
 ChatGPT ni de ningún modelo. No hay tokens de suscripción en el sistema, y eso no es una política que se
@@ -60,19 +61,47 @@ esto sea una garantía —identidad y almacenamiento del lado del servicio— es
 `accepted` / `rejected` los decide la ONG, **fuera** de estas cinco tools: un voluntario no acepta su
 propio trabajo.
 
+## Dos vías, y por qué la segunda va con cuidado
+
+Las tareas vienen de **ONGs** y de **proyectos open source**. La segunda vía existe porque un repo tiene
+el backlog público y ya escrito, así que no hay que esperar a que nadie firme nada.
+
+Pero abrir esa vía a lo bruto sería ser parte de un problema muy documentado. Un estudio de 2026 sobre
+294 repositorios y más de 2 millones de PRs mide lo que llama **«AI-DDoS»**: contribuciones plausibles
+pero flojas que desbordan la capacidad de revisión. Dos de cada tres mantenedores, de 800 encuestados, lo
+declaran una carga significativa. La asimetría es toda la historia: *se generan diez propuestas en el
+tiempo que alguien necesita para verificar una*.
+
+Así que en Relevo el consentimiento **no es una política, es el esquema**. Una tarea sin procedencia
+registrada no se rechaza: **no se puede construir**.
+
+| Nivel | Qué autoriza | Hace falta para |
+|---|---|---|
+| **1 · Opt-in** | Que Relevo saque tareas de este repo (con URL comprobable) o el acuerdo con la ONG | **Todo** |
+| **2 · Pre-aprobación** | Que **esta** issue concreta admita ayuda de IA | Sólo `patch` |
+
+Los dos niveles no son una invención nuestra: son la política que Ghostty publicó en enero de 2026,
+escrita como tipo en vez de como norma.
+
 ## Tipos de tarea
 
-El contrato es genérico a propósito — ninguna ONG se ha comprometido todavía y el esquema tiene que
-sobrevivir a esa elección. Hay fixtures de las tres candidatas:
+| Tipo | Vía | Qué pide | Cómo se verifica |
+|---|---|---|---|
+| `translate` | ONG y OSS | Traducir un texto corto respetando un checklist | Checklist + referencia |
+| `adapt` | ONG | Reescribir a lectura fácil según una norma | Checklist + validación del colectivo |
+| `classify` | ONG y OSS | Etiqueta de un conjunto cerrado, con justificación | **Gold set** — en OSS, el histórico de etiquetas del repo |
+| `patch` | **Sólo OSS** | Cambio de código sobre una issue pre-aprobada | El mantenedor, en tu PR |
 
-| Tipo | Qué pide | Fixture |
-|---|---|---|
-| `translate` | Traducir un texto corto respetando un checklist de estilo | Kiva — perfiles de préstamo, ~100 palabras |
-| `adapt` | Reescribir a lectura fácil según una norma | Plena Inclusión — UNE 153101 |
-| `classify` | Etiqueta de un conjunto cerrado, con justificación | Cochrane Crowd — ¿ensayo controlado aleatorizado? |
+`classify` es el tipo que produce una **cifra de precisión**, que es lo que convierte el piloto en
+evidencia en vez de en una sensación. En la vía OSS sale gratis: las etiquetas que el mantenedor ya puso
+son el conjunto de referencia.
 
-`classify` es el tipo que produce una **cifra de precisión** contra el gold set, que es lo que convierte
-el piloto en evidencia en vez de en una sensación.
+`patch` es el único que puede hacer daño, y va con tres frenos que responden a quejas medidas:
+**un parche por sesión** (revisar código cuesta una tarde, leer una traducción diez minutos),
+**`testedHow` obligatorio** — qué ejecutaste y qué viste, antes y después, porque la queja número uno no
+es que el parche sea de IA sino que quien lo mandó no reprodujo el fallo — y una **frase de divulgación**
+que redacta el servidor para pegar tal cual. **Relevo nunca abre el PR**: lo abre la persona, con su
+cuenta y su nombre.
 
 ## El contenido de una tarea es input hostil
 

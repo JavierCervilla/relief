@@ -16,12 +16,28 @@ decir *probado y de camino a `main`*, nunca "lo tengo casi".
 - [x] Skill del voluntario (`skills/relevo/`) en modo pull manual
 - [x] Diagrama de arquitectura en `docs/diagrams/`
 
-## Fase 1 — Que una ONG diga que sí
+## Fase 0.5 — La segunda vía: open source (RELE-2) · completa
 
-Esta fase **no es de código** y es la que bloquea a las demás. El diseño de la persistencia, del panel y
-de la integración no se puede hacer bien antes de saber con quién.
+- [x] Procedencia obligatoria en el esquema (`TaskSource`): sin consentimiento registrado no hay tarea
+- [x] Tipo `patch` con pre-aprobación **por issue**, y sólo desde una fuente `oss`
+- [x] Tope propio de **1 parche por sesión**, dentro de la operación atómica
+- [x] `testedHow` obligatorio y sin valor por defecto
+- [x] Frase de divulgación redactada por el servidor
+- [x] Filtro por vía en `list_tasks`, y fixtures de las dos
+
+## Fase 1 — Que alguien diga que sí (ONG **y** proyecto open source)
+
+Esta fase **no es de código** y es la que bloquea a las demás. Las dos vías van **con el mismo peso**: el
+OSS desbloquea antes porque el backlog ya está escrito, pero la ONG no se degrada a plan B — la historia
+de impacto social es la más fuerte que tiene el proyecto.
 
 - [ ] Contacto con dos ONGs en paralelo; arrancar con la que responda
+- [ ] **Contacto con dos proyectos open source**, pidiendo el opt-in de nivel 1 en un issue público
+- [ ] **Acordar con cada proyecto qué issues admiten ayuda de IA** (nivel 2) y cómo marcarlas
+- [ ] **Preguntar por CLA/DCO**: si el proyecto exige firmar algo para contribuir código, es del
+      voluntario y no de Relevo — pero hay que saberlo antes de mandar a nadie
+- [ ] Elegir la ventana temporal del histórico de etiquetas que sirve de gold set para el triaje (un repo
+      donde etiquetó un bot, o donde el criterio cambió con los años, no vale como referencia)
 - [ ] Adaptar el tipo de tarea a su flujo real (añadir un miembro a la unión es aditivo; rehacer el esquema no)
 - [ ] Acordar el gold set: 50 tareas con respuesta de referencia
 - [ ] Acordar quién revisa y con qué criterio (`accepted` / `rejected` es suyo, no nuestro)

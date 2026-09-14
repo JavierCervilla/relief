@@ -36,6 +36,11 @@ Deberías ver `relevo` con sus cinco tools: `list_tasks`, `get_task`, `claim_tas
 | `RELEVO_VOLUNTEER_ID` | Tu identificador de voluntario. Es sobre lo que se cuenta el límite diario. | `local-volunteer` |
 | `RELEVO_FIXTURES` | Ruta a otro fichero de tareas, si quieres probar con las tuyas. | Las que trae el repo |
 
+## Las dos vías
+
+Las tareas de ejemplo cubren las dos: ONGs (Kiva, Plena Inclusión, Cochrane) y un proyecto open source de
+demostración. Filtra con `sourceKind: "ngo"` o `sourceKind: "oss"` en `list_tasks` si sólo te apetece una.
+
 ## Qué NO necesita
 
 **Ninguna credencial de modelo.** Relevo no llama a Claude ni a ningún otro modelo: la inferencia ocurre
