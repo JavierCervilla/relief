@@ -474,6 +474,10 @@ a:hover {
  * permite que el contenido esté SIEMPRE en el HTML — que es también lo que hace que los tests de
  * honestidad puedan leerlo sin ejecutar un navegador.
  */
+.bifurcacion__botones {
+  display: none;
+}
+
 .js .bifurcacion__botones {
   display: flex;
 }

@@ -13,23 +13,61 @@
  *
  * Los casos que él encontró están aquí con su identificador original (M1, M3, M4, M6, M9, M13, M14).
  *
+ * **Muta una COPIA, nunca el árbol de trabajo.** La primera versión escribía la mutación encima del
+ * fuente de producción y lo restauraba después, con la limpieza antes de cada `process.exit`. Eso
+ * cubre las salidas que el script controla y ninguna más: ni un SIGKILL, ni un timeout de CI, ni un
+ * OOM. Y aunque no se caiga, la ventana existe — `seguridad` se encontró un build suyo con
+ * `@import url("https://fonts.googleapis.com/...")` dentro del CSS publicado, persiguió la fuga, y
+ * resultó ser la mutación M20 mientras la batería corría en el mismo árbol. Lo pilló al primer intento
+ * sin buscarlo.
+ *
+ * Que la mutación más peligrosa de la batería sea justamente «reintroduce un origen de terceros en
+ * producción» es lo que convierte eso de curiosidad en riesgo: la ventana es corta, pero lo que se
+ * escapa por ella es exactamente el anti-objetivo que la página promete cumplir.
+ *
  * Uso:  node scripts/mutate.mjs [--only M1,M9] [--self-test]
  * Sale 1 si alguna mutación sobrevive, y 2 si la suite ya estaba roja sin mutar.
  */
 
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const mutations = JSON.parse(readFileSync(join(ROOT, "scripts/mutations.json"), "utf8"));
 
-/** Construye y corre la suite. Devuelve true si TODO está verde. */
-function verde() {
-  const build = spawnSync("npx", ["astro", "build"], { cwd: ROOT, encoding: "utf8" });
+/**
+ * Lo que hay que copiar para poder construir y testear. `node_modules` NO se copia: se enlaza, que
+ * es lo que hace la copia barata (un megabyte largo frente a varios cientos).
+ */
+const A_COPIAR = [
+  "src",
+  "tests",
+  "scripts",
+  "public",
+  "package.json",
+  "tsconfig.json",
+  "astro.config.mjs",
+  "vitest.config.ts",
+];
+
+/** Monta la copia de trabajo y devuelve su ruta. */
+function montarCopia() {
+  const copia = mkdtempSync(join(tmpdir(), "relevo-web-mutate-"));
+  for (const entrada of A_COPIAR) {
+    cpSync(join(ROOT, entrada), join(copia, entrada), { recursive: true });
+  }
+  symlinkSync(join(ROOT, "node_modules"), join(copia, "node_modules"), "dir");
+  return copia;
+}
+
+/** Construye y corre la suite DENTRO de la copia. Devuelve true si todo está verde. */
+function verde(copia) {
+  const build = spawnSync("npx", ["astro", "build"], { cwd: copia, encoding: "utf8" });
   if (build.status !== 0) return false;
-  return spawnSync("npx", ["vitest", "run"], { cwd: ROOT, encoding: "utf8" }).status === 0;
+  return spawnSync("npx", ["vitest", "run"], { cwd: copia, encoding: "utf8" }).status === 0;
 }
 
 if (process.argv.includes("--self-test")) {
@@ -60,7 +98,15 @@ const soloArg = process.argv.find((a) => a.startsWith("--only"));
 const solo = soloArg === undefined ? null : new Set(soloArg.replace(/^--only=?/, "").split(","));
 const aCorrer = mutations.filter((m) => solo === null || solo.has(m.id));
 
-if (!verde()) {
+const COPIA = montarCopia();
+// Se borra pase lo que pase, incluida una señal: es un directorio temporal y nada de producción
+// depende de él, así que aquí un `finally` incompleto no puede hacer daño — lo peor es dejar basura
+// en /tmp, no una mutación en el repo.
+const limpiar = () => rmSync(COPIA, { recursive: true, force: true });
+process.on("exit", limpiar);
+for (const senal of ["SIGINT", "SIGTERM"]) process.on(senal, () => process.exit(130));
+
+if (!verde(COPIA)) {
   process.stderr.write(
     "la suite ya está ROJA sin mutar nada: una batería sobre un baseline roto cuenta cada mutación\n" +
       "como cazada y miente en la dirección cómoda. Arregla la suite antes.\n",
@@ -70,7 +116,7 @@ if (!verde()) {
 
 let sobreviven = 0;
 for (const m of aCorrer) {
-  const ruta = join(ROOT, m.file);
+  const ruta = join(COPIA, m.file);
   const original = readFileSync(ruta, "utf8");
   if (!original.includes(m.from)) {
     process.stdout.write(`✗ ${m.id.padEnd(4)} PATRÓN AUSENTE — ${m.what}\n`);
@@ -78,7 +124,7 @@ for (const m of aCorrer) {
     continue;
   }
   writeFileSync(ruta, original.replace(m.from, m.to));
-  const siguieVerde = verde();
+  const siguieVerde = verde(COPIA);
   writeFileSync(ruta, original);
   if (siguieVerde) {
     process.stdout.write(`✗ ${m.id.padEnd(4)} SOBREVIVE — ${m.what}\n`);
@@ -87,10 +133,6 @@ for (const m of aCorrer) {
     process.stdout.write(`✓ ${m.id.padEnd(4)} cazada — ${m.what}\n`);
   }
 }
-
-// Deja `dist/` coherente con el árbol: si la última mutación lo dejó construido mutado, el siguiente
-// que corra los tests sin construir mediría el HTML equivocado.
-verde();
 
 process.stdout.write(
   `\n${aCorrer.length} mutaciones, ${sobreviven === 0 ? "todas cazadas" : `${sobreviven} SUPERVIVIENTE(S)`}.\n`,
