@@ -77,8 +77,11 @@ export const LanguageSchema = z
 const HttpsUrl = z
   .url()
   .refine((u) => u.startsWith("https://"), "el consentimiento se comprueba en una URL https")
-  // eslint-disable-next-line no-control-regex -- el punto es precisamente cazar caracteres de control
-  .refine((u) => !/[\u0000-\u001f\u007f]/.test(u), "sin caracteres de control: una URL con escapes ANSI le miente al terminal de quien la revisa")
+  .refine(
+    // eslint-disable-next-line no-control-regex -- cazarlos es justamente el punto
+    (u) => !/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]/.test(u),
+    "sin caracteres de control ni invisibles: los escapes ANSI reescriben el terminal y U+202E (RLO) le da la vuelta a lo que se lee",
+  )
   .refine((u) => {
     try {
       const parsed = new URL(u);
@@ -102,14 +105,48 @@ export const RepoSchema = z
     "repositorio en formato `owner/name`, sin segmentos que empiecen por `-`",
   )
   .refine(
-    (r) => r.split("/").every((seg) => seg !== "." && seg !== ".."),
-    "ningún segmento del repositorio puede ser `.` ni `..`",
+    (r) =>
+      r
+        .split("/")
+        .every((seg) => seg !== "." && seg !== ".." && seg !== ".git" && !seg.endsWith(".git")),
+    "ningún segmento del repositorio puede ser `.`, `..` ni `.git`, ni acabar en `.git`",
   );
 
-/** ¿La URL del consentimiento vive de verdad en el repo que dice autorizar? */
+/**
+ * Forjas donde puede vivir un consentimiento. Lista blanca a propósito: sin fijar el host, cualquiera
+ * publica `https://evil.example/torvalds/linux/optin` y el cruce lo da por bueno.
+ */
+const FORJAS = new Set([
+  "github.com",
+  "raw.githubusercontent.com",
+  "gitlab.com",
+  "codeberg.org",
+  "bitbucket.org",
+  "git.sr.ht",
+]);
+
+/**
+ * ¿La URL del consentimiento vive de verdad en el repo que dice autorizar?
+ *
+ * Dos condiciones, y las dos hacen falta: el host es una forja conocida, y el repo son los **dos
+ * primeros** segmentos de la ruta. Comparar sólo `pathname` en cualquier posición dejaba pasar
+ * `https://evil.example/torvalds/linux/optin` y también
+ * `https://github.com/atacante/suyo/blob/main/relevo-demo/docs-es/OPTIN.md`, o sea un fichero en el repo
+ * del atacante. Lo encontró `seguridad` en la segunda pasada, y su lectura es la que importa: el mensaje
+ * del `refine` prometía más de lo que entregaba.
+ */
 function urlCoversRepo(url: string, repo: string): boolean {
   try {
-    return new URL(url).pathname.includes(`/${repo}/`) || new URL(url).pathname.endsWith(`/${repo}`);
+    const parsed = new URL(url);
+    if (!FORJAS.has(parsed.hostname)) return false;
+    const segments = parsed.pathname.split("/").filter((seg) => seg !== "");
+    const [owner, name] = repo.split("/");
+    // Sin distinguir mayúsculas: las forjas no lo hacen, y un mantenedor que pegue
+    // `github.com/relevo-demo/Docs-ES` tiene un enlace legítimo que nos quedaríamos fuera. En un piloto
+    // eso no es rigor, es una puerta cerrada en la cara de quien nos está haciendo un favor.
+    const igual = (a: string | undefined, b: string | undefined): boolean =>
+      a !== undefined && b !== undefined && a.toLowerCase() === b.toLowerCase();
+    return igual(segments[0], owner) && igual(segments[1], name);
   } catch {
     return false;
   }
@@ -295,7 +332,18 @@ export const TaskSpecSchema = z
   );
 export type TaskSpec = z.infer<typeof TaskSpecSchema>;
 
-/** Una tarea tal y como la guarda el store: su especificación más el estado del ciclo de vida. */
+/**
+ * Una tarea tal y como la guarda el store: su especificación más el estado del ciclo de vida.
+ *
+ * **Ojo al construir una `Task` a mano.** `z.infer` NO lleva los `.refine`, así que un literal con
+ * `type: "patch"` y `source.kind: "ngo"`, o con un opt-in que no vive en el repo declarado, **compila
+ * con `tsc --strict`**. Las reglas viven en `TaskSpecSchema.parse`, no en el tipo.
+ *
+ * Hoy no hay hueco alcanzable: `loadTasks` es la única entrada de producción y parsea. Pero el día que
+ * entre la ingesta, **tiene que parsear con `TaskSpecSchema`** — no basta con que el dato tipe. Está
+ * anotado como sub-casilla de la ingesta en el ROADMAP, y va escrito aquí porque éste es el fichero que
+ * alguien abre justo antes de cometer el error.
+ */
 export const TaskSchema = z.intersection(TaskSpecSchema, z.object({ status: TaskStatusSchema }));
 export type Task = z.infer<typeof TaskSchema>;
 

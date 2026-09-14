@@ -7,17 +7,45 @@
  * parche. Cada mutación de `mutations.json` desactiva UN invariante; si los tests siguen verdes, ese
  * invariante no está protegido por nadie y el fallo es del test, no del código.
  *
- * Uso:  node scripts/mutate.mjs [--only M3,M7]
- * Sale con código 1 si alguna mutación sobrevive.
+ * Uso:  node scripts/mutate.mjs [--only M3,M7] [--self-test]
+ * Sale con código 1 si alguna mutación sobrevive, y con 2 si la suite ya estaba roja sin mutar.
+ *
+ * `--self-test` comprueba que la guarda del baseline SABE ponerse roja. Existe porque esa guarda es el
+ * arreglo de «el verificador contaba suite-en-rojo como mutación-cazada», y sin un test se puede borrar
+ * sin que nada se entere — o sea, es exactamente la clase de fallo que ella misma arregla. El
+ * precedente es `gate-lint --self-test`, en este mismo repo.
  */
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const mutations = JSON.parse(readFileSync(join(ROOT, "scripts/mutations.json"), "utf8"));
+
+if (process.argv.includes("--self-test")) {
+  // Rompe un test a propósito en una copia del árbol y exige que el baseline lo cace con exit 2.
+  const fixture = join(ROOT, "tests/__self-test-roto.test.ts");
+  writeFileSync(
+    fixture,
+    'import { expect, it } from "vitest";\nit("roto a propósito", () => { expect(1).toBe(2); });\n',
+  );
+  // La limpieza va ANTES de cada `process.exit`, nunca en un `finally`: `process.exit` no ejecuta los
+  // `finally`, así que el fixture roto se quedaba en el árbol y dejaba la suite en rojo. Lo encontró el
+  // propio gate al correr `npm run mutate` justo después.
+  const run = spawnSync("node", [join(ROOT, "scripts/mutate.mjs"), "--only=M1"], {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  rmSync(fixture, { force: true });
+  if (run.status !== 2) {
+    console.error(`self-test: con la suite rota esperaba exit 2 y salió ${run.status}`);
+    process.exit(1);
+  }
+  console.log("self-test: con la suite rota, la batería se niega a correr (exit 2). Correcto.");
+  process.exit(0);
+}
 
 const onlyFlag = process.argv.find((arg) => arg.startsWith("--only="));
 const only = onlyFlag ? new Set(onlyFlag.slice("--only=".length).split(",")) : undefined;

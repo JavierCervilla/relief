@@ -20,7 +20,7 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "gate": "npm run typecheck && npm run lint && npm test && npm run mutate && npm run smoke",
-    "mutate": "node scripts/mutate.mjs",
+    "mutate": "node scripts/mutate.mjs --self-test && node scripts/mutate.mjs",
     "smoke": "npm run build && node scripts/smoke.mjs"
   },
   "dependencies": {

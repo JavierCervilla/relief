@@ -150,15 +150,18 @@ describe("una URL de consentimiento no puede mentirle a quien la lee", () => {
     return task;
   }
 
-  it("rechaza userinfo: `https://github.com@evil.example/` se lee como GitHub y no lo es", () => {
-    expect(TaskSpecSchema.safeParse(conOptIn("https://github.com@evil.example/issues/1")).success).toBe(
-      false,
-    );
+  it("rechaza userinfo aunque el host SÍ sea la forja correcta", () => {
+    // Ojo con el host: con `...@evil.example` lo rechaza antes la lista blanca de forjas y el test
+    // pasaría sin ejercitar esta regla. Lo destapó la mutación M37 sobreviviendo con el test en verde.
+    expect(
+      TaskSpecSchema.safeParse(conOptIn("https://quien-sea@github.com/relevo-demo/docs-es/issues/1"))
+        .success,
+    ).toBe(false);
   });
 
-  it("rechaza credenciales embebidas", () => {
+  it("rechaza credenciales embebidas, también sobre la forja correcta", () => {
     expect(
-      TaskSpecSchema.safeParse(conOptIn("https://user:token@evil.example/relevo-demo/docs-es/issues/1"))
+      TaskSpecSchema.safeParse(conOptIn("https://user:token@github.com/relevo-demo/docs-es/issues/1"))
         .success,
     ).toBe(false);
   });
@@ -184,10 +187,46 @@ describe("una URL de consentimiento no puede mentirle a quien la lee", () => {
     // Se prueba `RepoSchema` SOLO, a propósito. A través de la tarea entera, el cruce opt-in↔repo
     // rechazaba estos valores primero y el test pasaba por un motivo distinto del que anuncia: lo
     // destapó la mutación M40 sobreviviendo con el test en verde.
-    for (const repo of ["../..", "a/..", "-rf/--no-preserve", "./x", "a/-b"]) {
+    for (const repo of ["../..", "a/..", "-rf/--no-preserve", "./x", "a/-b", ".git/x", "a/b.git"]) {
       expect(RepoSchema.safeParse(repo).success).toBe(false);
     }
     expect(RepoSchema.safeParse("relevo-demo/docs-es").success).toBe(true);
+  });
+
+  it("el consentimiento tiene que vivir en una FORJA conocida, no en cualquier dominio", () => {
+    // Comparar sólo la ruta dejaba pasar `https://evil.example/torvalds/linux/optin`: el slug en el
+    // path es trivial de fabricar. Sin fijar el host, el mensaje del refine prometía más de lo que daba.
+    expect(
+      TaskSpecSchema.safeParse(conOptIn("https://evil.example/relevo-demo/docs-es/optin")).success,
+    ).toBe(false);
+  });
+
+  it("y el repo tiene que ser los DOS PRIMEROS segmentos, no aparecer en cualquier posición", () => {
+    // Si no, un fichero dentro del repo del ATACANTE, en la propia forja, cuela.
+    expect(
+      TaskSpecSchema.safeParse(
+        conOptIn("https://github.com/atacante/suyo/blob/main/relevo-demo/docs-es/OPTIN.md"),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("ningún carácter invisible o bidi llega a la URL que se le enseña a una persona", () => {
+    // U+202E (RLO) le da la vuelta a lo que se lee: es el ataque del docstring un rango más allá.
+    // El aserto es sobre la PROPIEDAD y no sobre quién la hace cumplir: `z.url()` normaliza y elimina
+    // algunos (U+FEFF, U+0085) y el refine rechaza el resto. Las dos salidas son buenas; lo que no vale
+    // es que el carácter sobreviva hasta el texto. Probar el mecanismo en vez de la propiedad me dejó
+    // este test en rojo por el motivo equivocado.
+    // eslint-disable-next-line no-control-regex -- el aserto es precisamente sobre ellos
+    const invisibles = /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]/;
+    for (const cp of [0x202e, 0x200b, 0x2069, 0xfeff, 0x0085, 0x001b]) {
+      const url = `https://github.com/relevo-demo/docs-es/issues/1${String.fromCharCode(cp)}`;
+      const parsed = TaskSpecSchema.safeParse(conOptIn(url));
+      if (parsed.success) {
+        const source = parsed.data.source;
+        if (source.kind !== "oss") throw new Error("la fixture de prueba es de OSS");
+        expect(source.optIn.url).not.toMatch(invisibles);
+      }
+    }
   });
 
   it("la issue pre-aprobada también tiene que vivir en el repo declarado", () => {

@@ -70,6 +70,14 @@ sostiene el argumento de "uso ordinario".
         el material se entrega como dato y eso sigue funcionando, pero derrota la revisión humana, que
         es la última capa — no se puede leer lo que no se ve. El repo ya vendoriza la lista exacta en
         `check-unicode-safety.mjs`; aplicarla en tiempo de servicio es barato.
+  - [ ] **Validar con `TaskSpecSchema.parse`, no con el tipo.** `z.infer` no lleva los `.refine`: un
+        literal `Task` con `type: "patch"` y fuente de ONG, o con un opt-in que no vive en el repo
+        declarado, **compila**. Las reglas del consentimiento viven en el parse, así que la ingesta tiene
+        que pasar por él — que el dato tipe no prueba nada.
+  - [ ] **Fijar la política de forja.** `urlCoversRepo` exige host de una lista blanca y que el repo sean
+        los dos primeros segmentos de la ruta. La lista actual (GitHub, GitLab, Codeberg, Bitbucket,
+        sourcehut) es una decisión de producto disfrazada de constante: revísala con la primera ONG o
+        proyecto que entre, porque un self-hosted legítimo hoy se queda fuera.
   - [ ] **Cota de longitud.** `content`, `instructions`, `title` y la checklist no tienen máximo. Un
         material de 10 MB es una denegación de contexto en la sesión del voluntario.
 
