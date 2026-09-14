@@ -84,6 +84,34 @@ Y el aviso público de que el correo es un marcador apunta al repositorio como *
 visitante puede verificar por su cuenta**: anunciar que el buzón oficial no está vivo le da munición a
 quien registre un dominio parecido y diga «escríbeme aquí mientras tanto».
 
+### Corregido — el oráculo de cifras, tercera versión: por cifra declarada
+
+Las dos anteriores las rompió el verificador. La primera era una lista blanca de dígitos y admitía
+`0,1,2,3,4,5,10` estuvieran donde estuvieran. La segunda exentaba **campos completos** leyendo el
+propio diccionario: como `limites.parrafos` está exento por llevar los datos del estudio, meter «Ya
+llevamos 1240 tareas completadas.» delante de esa prosa pasaba igual. Unas quince cadenas de ciento
+veinte quedaban fuera del veto, y sólo una de las cuatro familias estaba declarada.
+
+Ahora **cuenta**: cada cifra que la página puede contener está declarada con **cuántas veces** y **por
+qué**, así que una añadida es un token nuevo o una cuenta que no cuadra. La granularidad es la cifra,
+no el campo — no hay prosa exenta donde esconder un número. Los cuatro ataques del verificador (en la
+prosa del estudio, en la etiqueta de un tope, en el título de un paso y en una etiqueta de ficha)
+ponen la suite roja.
+
+Es deliberadamente frágil: añadir un `§6` legítimo deja el test rojo hasta que alguien lo declare con
+su motivo. Esa es la propiedad — en esta página un número nuevo es una afirmación nueva.
+
+**Cuarta población: JSON-LD.** Hoy la página no lleva datos estructurados, y por eso se cubre ahora:
+`textoVisible` borra los `<script>` enteros, así que el día que alguien añada un `application/ld+json`
+para SEO —el siguiente commit natural de cualquier landing— entraría un canal sin veto.
+
+### Corregido — `web/**` en los ignores de la raíz era demasiado ancho
+
+El arreglo de B1 dejaba los diccionarios, `config.ts`, los tests y los scripts de la web **sin linter
+para siempre**, cuando el problema era sólo el directorio que genera `astro sync`. Estrechado a
+`web/.astro/**` + `web/dist/**`, y al hacerlo el linter encontró **tres restos muertos** en los tests
+de la web, de la propia reescritura del oráculo.
+
 ### Corregido — la batería de mutantes ya no toca el árbol de trabajo
 
 `seguridad` se lo encontró de bruces, no buscándolo: un build suyo salió con

@@ -21,7 +21,13 @@ export default [
     // Los `.json` no son código: ESLint los parsea como JS y un objeto suelto le parece una expresión
     // sin usar. `tsconfig.test.json` fue el primero que lo destapó.
     //
-    // `web/**` es OTRO PAQUETE npm, con su propio gate (`web/npm run gate`: astro check + linter
+    // De `web/` se ignora lo GENERADO, no el paquete entero. La primera versión de este arreglo puso
+    // `web/**` y el verificador señaló que era demasiado ancho: dejaba los diccionarios, `config.ts`,
+    // los tests y los scripts de la web sin linter PARA SIEMPRE, cuando el problema era sólo el
+    // directorio que genera `astro sync`. Los `.astro` no los toca ESLint de todas formas (no están en
+    // sus extensiones por defecto y su gate es el linter de frontend + `check-astro-sinks`).
+    //
+    // `web/` es OTRO PAQUETE npm, con su propio gate (`web/npm run gate`: astro check + linter
     // anti-slop de frontend + build + tests). Sin esta entrada, `npm run lint` de la raíz salía 1 en
     // cuanto alguien construía la web: `astro sync` genera `web/.astro/*.d.ts` con `any` y un
     // triple-slash reference, y el ratchet subido del preset los marca como error.
@@ -35,7 +41,8 @@ export default [
       "node_modules/**",
       "coverage/**",
       ".claude/**",
-      "web/**",
+      "web/.astro/**",
+      "web/dist/**",
       "**/*.json",
     ],
   },

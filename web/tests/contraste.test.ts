@@ -60,6 +60,11 @@ function contraste(a: string, b: string): number {
  * interfaz (WCAG 1.4.11: bordes de control e indicadores de foco). Los tamaños no son una suposición:
  * están en `landing.css` y se citan en la columna.
  *
+ * Y se quitan los pares que la página NO pinta: tenía `borde-control` sobre `arena` (sólo se usa sobre
+ * la banda honda) y `papel-en-petroleo` sobre `accion` (la CTA es `arena` sobre `accion`; su hover es
+ * `papel-en-petroleo` sobre `petroleo`). Eran inocuos —medían de más, no de menos— pero diluían la
+ * frase: una lista que incluye pares inventados deja de poder afirmar que es la población real.
+ *
  * **La frase «cada par que la página pinta» era falsa** hasta que el verificador la comprobó en
  * RELE-3: faltaban justo los estados de interacción, que es donde estaban los dos fallos reales —el
  * borde del botón atenuado a 1.26:1 y el anillo de foco del pie a 2.39:1—. El gate estaba midiendo su
@@ -69,13 +74,13 @@ function contraste(a: string, b: string): number {
 const PARES: readonly { frente: string; fondo: string; minimo: number; donde: string }[] = [
   // --- Estados de interacción: los que faltaban -----------------------------
   { frente: "borde-control", fondo: "arena-honda", minimo: 3, donde: "(faltaba) borde del botón atenuado" },
-  { frente: "borde-control", fondo: "arena", minimo: 3, donde: "(faltaba) borde de control sobre arena" },
+
   { frente: "petroleo-vivo", fondo: "arena-honda", minimo: 3, donde: "(faltaba) borde del botón suelto" },
   { frente: "accion", fondo: "arena-honda", minimo: 3, donde: "(faltaba) borde y fondo del botón elegido" },
   { frente: "accion-en-petroleo", fondo: "petroleo", minimo: 3, donde: "(faltaba) anillo de foco en banda petróleo" },
   { frente: "tinta-suave", fondo: "arena-honda", minimo: 4.5, donde: "(faltaba) texto del botón atenuado" },
   { frente: "arena", fondo: "accion", minimo: 4.5, donde: "(faltaba) texto del botón elegido" },
-  { frente: "papel-en-petroleo", fondo: "accion", minimo: 4.5, donde: "(faltaba) texto de la CTA" },
+  { frente: "papel-en-petroleo", fondo: "petroleo", minimo: 4.5, donde: "(faltaba) CTA en hover" },
 
   // --- Texto ---------------------------------------------------------------
   { frente: "tinta", fondo: "arena", minimo: 4.5, donde: "texto corrido" },

@@ -19,7 +19,7 @@ import { en } from "../src/i18n/en.js";
 import { es } from "../src/i18n/es.js";
 import { construirMailto } from "../src/i18n/index.js";
 
-import { NOMBRES_VETADOS, cifrasIntrusas } from "./vetos.js";
+import { NOMBRES_VETADOS, discrepanciasDeCifras } from "./vetos.js";
 
 const DIST = new URL("../dist/", import.meta.url).pathname;
 
@@ -97,6 +97,21 @@ function atributosPublicados(fuente: string): string[] {
   return salida;
 }
 
+/**
+ * El contenido de cualquier bloque de datos estructurados (`application/ld+json`).
+ *
+ * Hoy la página no lleva ninguno, así que esta población está vacía — y por eso existe. `textoVisible`
+ * borra los `<script>` enteros y `atributosPublicados` no los parsea, así que el día que alguien añada
+ * JSON-LD para SEO (el siguiente commit natural de cualquier landing) entraría un cuarto canal sin
+ * veto. El docstring de este bloque dice que una afirmación pública no deja de serlo por no estar en
+ * el cuerpo; un JSON-LD es exactamente eso. Lo señaló el verificador como latente.
+ */
+function datosEstructurados(fuente: string): string[] {
+  return [...fuente.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)].map(
+    ([, cuerpo]) => desescapar(cuerpo ?? ""),
+  );
+}
+
 /** El asunto y el cuerpo de cada `mailto:`, ya decodificados. */
 function textosDeMailto(fuente: string): string[] {
   const salida: string[] = [];
@@ -149,12 +164,11 @@ describe("no hay ni una cifra de actividad: no existe ninguna que sea verdad", (
    * mirado los tres: admitía `0,1,2,3,4,5,10` en cualquier sitio, así que «10 organizaciones a bordo»
    * pasaba. Ahora el oráculo es por contexto (ver `vetos.ts`).
    */
-  for (const { codigo, copy } of PAGINAS) {
-    it(`${codigo} · texto visible: ningún dígito fuera de un contexto legítimo`, () => {
-      const intrusas = cifrasIntrusas(textoVisible(html[codigo] ?? ""), copy);
+  for (const { codigo } of PAGINAS) {
+    it(`${codigo} · texto visible: ninguna cifra sin declarar`, () => {
       expect(
-        intrusas,
-        `cifras fuera de contexto en ${codigo}. Los únicos sitios donde un número es legítimo son los topes con su etiqueta, los párrafos del estudio, la licencia y los ordinales §. Si esto es una métrica de actividad, no hay ninguna que sea verdad todavía`,
+        discrepanciasDeCifras(textoVisible(html[codigo] ?? "")),
+        `cifras sin declarar en ${codigo}. Cada número de esta página vive en CIFRAS_DECLARADAS con su cuenta y su motivo: si el tuyo es legítimo, decláralo ahí; si es una métrica de actividad, no hay ninguna que sea verdad todavía`,
       ).toEqual([]);
     });
 
@@ -173,15 +187,37 @@ describe("no hay ni una cifra de actividad: no existe ninguna que sea verdad", (
         expect(texto.match(/\d+/g) ?? [], `dígito en un mailto de ${codigo}: «${texto}»`).toEqual([]);
       }
     });
+
+    it(`${codigo} · datos estructurados: ni un dígito`, () => {
+      for (const texto of datosEstructurados(html[codigo] ?? "")) {
+        expect(texto.match(/\d+/g) ?? [], `dígito en un JSON-LD de ${codigo}: «${texto}»`).toEqual([]);
+      }
+    });
   }
 
   describe("y sabe ponerse rojo en LAS TRES poblaciones", () => {
     // Un caso por población. El de antes sólo ejercitaba el texto visible sobre un `<p>`, que era
     // justo la única ruta que ya funcionaba: el «sabe ponerse rojo» probaba lo que no hacía falta
     // probar.
-    it("texto visible", () => {
+    it("texto visible: una cifra que no está declarada", () => {
       const impostor = textoVisible("<p>Ya llevamos <strong>1240</strong> tareas completadas.</p>");
-      expect(cifrasIntrusas(impostor, es)).toEqual(["1240"]);
+      expect(discrepanciasDeCifras(impostor).some((f) => f.includes("«1240»"))).toBe(true);
+    });
+
+    it("texto visible: una cifra YA declarada, pero repetida de más", () => {
+      // El ataque del verificador contra la versión anterior: meter la métrica dentro de un campo que
+      // estaba exento entero (la prosa del estudio, las etiquetas de los topes, el título de un paso).
+      // Contando, un «10» de más es un «10» de más aunque viva en prosa bendecida.
+      const impostor = textoVisible(
+        "<p>10 Tareas al día. Y ya hay 10 organizaciones a bordo.</p>",
+      );
+      expect(discrepanciasDeCifras(impostor).some((f) => f.includes("«10» sale 2 veces"))).toBe(true);
+    });
+
+    it("datos estructurados (JSON-LD), el cuarto canal", () => {
+      const impostor =
+        '<script type="application/ld+json">{"description":"1240 tareas completadas"}</script>';
+      expect(datosEstructurados(impostor).join(" ").match(/\d+/g)).toEqual(["1240"]);
     });
 
     it("atributo publicado (meta description)", () => {
@@ -194,10 +230,9 @@ describe("no hay ni una cifra de actividad: no existe ninguna que sea verdad", (
       expect(textosDeMailto(impostor).join(" ").match(/\d+/g)).toEqual(["42"]);
     });
 
-    it("un número que la lista blanca ANTERIOR habría dejado pasar", () => {
-      // La mutación M6 del verificador, que pasaba con la versión vieja del oráculo.
+    it("la mutación M6, que pasaba con las DOS versiones anteriores del oráculo", () => {
       const impostor = textoVisible("<p>Ya hay 10 organizaciones a bordo y 3 voluntarios activos.</p>");
-      expect(cifrasIntrusas(impostor, es).sort()).toEqual(["10", "3"]);
+      expect(discrepanciasDeCifras(impostor).length).toBeGreaterThan(0);
     });
   });
 });
@@ -333,11 +368,18 @@ describe("mientras el correo sea un marcador, la página lo dice", () => {
   // existe, y creyendo que nos ha escrito — en una página cuyo argumento entero es no prometer lo que
   // no hay. El aviso sobrevivió sin test hasta que la batería lo mutó (M21).
   for (const { codigo, copy } of PAGINAS) {
-    it(`${codigo}: el aviso aparece, y una vez por vía`, () => {
+    it(`${codigo}: el aviso sale UNA VEZ DENTRO DE CADA FICHA`, () => {
+      // El nombre decía «una vez por vía» y el aserto medía «dos veces en la página»: hoy es
+      // equivalente porque se renderiza dentro de `vias.map()`, pero prometía una propiedad que no
+      // comprobaba. Si alguien lo saca del bucle y lo pone suelto al final, seguirían siendo dos. Lo
+      // señaló el verificador; ahora se mira ficha por ficha.
       if (!CORREO_ES_MARCADOR) return;
-      const visible = textoVisible(html[codigo] ?? "");
-      const veces = visible.split(copy.bifurcacion.avisoCorreo).length - 1;
-      expect(veces, `el aviso del marcador no sale dos veces en ${codigo}`).toBe(2);
+      const fichas = [...(html[codigo] ?? "").matchAll(/<div class="ficha"[\s\S]*?(?=<div class="ficha"|<\/section>)/g)];
+      expect(fichas, `esperaba dos fichas en ${codigo}`).toHaveLength(2);
+      for (const [ficha] of fichas) {
+        const veces = textoVisible(ficha).split(copy.bifurcacion.avisoCorreo).length - 1;
+        expect(veces, `el aviso del marcador no sale exactamente una vez en una ficha de ${codigo}`).toBe(1);
+      }
     });
   }
 });
