@@ -21,12 +21,31 @@ describe("fixtures", () => {
     }
   });
 
-  it("hay fixtures de las TRES ONGs candidatas y de los TRES tipos de tarea", async () => {
+  it("hay fixtures de las TRES ONGs candidatas y de los CUATRO tipos de tarea", async () => {
     const tasks = await loadTasks();
-    expect(new Set(tasks.map((t) => t.org))).toEqual(
-      new Set(["kiva", "plena-inclusion", "cochrane-crowd"]),
+    const ngos = tasks.filter((t) => t.source.kind === "ngo").map((t) => t.source.org);
+    expect(new Set(ngos)).toEqual(new Set(["kiva", "plena-inclusion", "cochrane-crowd"]));
+    expect(new Set(tasks.map((t) => t.type))).toEqual(
+      new Set(["translate", "adapt", "classify", "patch"]),
     );
-    expect(new Set(tasks.map((t) => t.type))).toEqual(new Set(["translate", "adapt", "classify"]));
+  });
+
+  it("hay fixtures de las DOS vías, y la de OSS cubre traducción, triaje y parche", async () => {
+    const tasks = await loadTasks();
+    expect(new Set(tasks.map((t) => t.source.kind))).toEqual(new Set(["ngo", "oss"]));
+    const oss = tasks.filter((t) => t.source.kind === "oss");
+    expect(new Set(oss.map((t) => t.type))).toEqual(new Set(["translate", "classify", "patch"]));
+  });
+
+  it("TODA fixture declara su consentimiento, y las de OSS con una URL comprobable", async () => {
+    for (const task of await loadTasks()) {
+      if (task.source.kind === "ngo") {
+        expect(task.source.agreement.length).toBeGreaterThan(0);
+      } else {
+        expect(task.source.optIn.url).toMatch(/^https:\/\//);
+        expect(task.source.maintainer ?? task.source.optIn.maintainer).toBeTruthy();
+      }
+    }
   });
 
   it("los identificadores son únicos", async () => {

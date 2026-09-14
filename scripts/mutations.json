@@ -159,5 +159,68 @@
     "file": "src/server/service.ts",
     "from": "  async getTask(input: GetTaskInput) {\n    await this.#expireStaleClaims();",
     "to": "  async getTask(input: GetTaskInput) {"
+  },
+  {
+    "id": "M24",
+    "what": "consentimiento — la procedencia pasa a opcional, o sea deja de ser consentimiento",
+    "file": "src/schema/task.ts",
+    "from": "  source: TaskSourceSchema,",
+    "to": "  source: TaskSourceSchema.optional() as unknown as typeof TaskSourceSchema,"
+  },
+  {
+    "id": "M25",
+    "what": "nivel 2 — un patch puede venir de una fuente que no es un repo",
+    "file": "src/schema/task.ts",
+    "from": "    (task) => task.type !== \"patch\" || task.source.kind === \"oss\",",
+    "to": "    () => true,"
+  },
+  {
+    "id": "M26",
+    "what": "nivel 2 — la pre-aprobación por issue se vuelve opcional",
+    "file": "src/schema/task.ts",
+    "from": "  preApproval: z.object({\n    issueUrl: HttpsUrl.describe(\"La issue que el mantenedor marcó como abierta a ayuda de IA.\"),\n    maintainer: NonEmpty,\n    approvedAt: Timestamp,\n  }),",
+    "to": "  preApproval: z.object({\n    issueUrl: HttpsUrl.describe(\"La issue que el mantenedor marcó como abierta a ayuda de IA.\"),\n    maintainer: NonEmpty,\n    approvedAt: Timestamp,\n  }).optional() as unknown as z.ZodObject<{issueUrl: typeof HttpsUrl, maintainer: typeof NonEmpty, approvedAt: typeof Timestamp}>,"
+  },
+  {
+    "id": "M27",
+    "what": "opt-in — vale cualquier cadena como URL, así que el consentimiento deja de comprobarse",
+    "file": "src/schema/task.ts",
+    "from": "      url: HttpsUrl.describe(\"Issue o fichero del repo donde el mantenedor lo autoriza.\"),",
+    "to": "      url: z.string() as unknown as typeof HttpsUrl,"
+  },
+  {
+    "id": "M28",
+    "what": "la queja nº1 — `testedHow` deja de ser obligatorio en el resultado de un parche",
+    "file": "src/schema/task.ts",
+    "from": "  testedHow: NonEmpty.describe(\n    \"Cómo has comprobado que arregla el fallo: qué ejecutaste y qué viste, antes y después.\",\n  ),",
+    "to": "  testedHow: z.string().default(\"\") as unknown as typeof NonEmpty,"
+  },
+  {
+    "id": "M29",
+    "what": "aritmética del mantenedor — desaparece el tope propio de parches por sesión",
+    "file": "src/store/memory-store.ts",
+    "from": "    if (task.type === \"patch\") {",
+    "to": "    if (false as boolean) {"
+  },
+  {
+    "id": "M30",
+    "what": "tope de parches — se cuenta sobre claims VIVOS, así que liberar devolvería el cupo",
+    "file": "src/store/memory-store.ts",
+    "from": "      const patches = this.#claimEvents.filter(\n        (event) => event.sessionId === request.sessionId && event.taskType === \"patch\",\n      ).length;",
+    "to": "      const patches = [...this.#claims.values()].filter(\n        (claim) => claim.sessionId === request.sessionId,\n      ).length;"
+  },
+  {
+    "id": "M31",
+    "what": "divulgación — get_task deja de entregar la frase de aviso de IA",
+    "file": "src/server/service.ts",
+    "from": "        ...(task.source.kind === \"oss\" ? { disclosure: disclosureFor(task) } : {}),",
+    "to": "        ...({} as Record<string, never>),"
+  },
+  {
+    "id": "M32",
+    "what": "vía — el filtro por ONG/OSS deja de filtrar",
+    "file": "src/server/service.ts",
+    "from": "      .filter((task) => input.sourceKind === undefined || task.source.kind === input.sourceKind)",
+    "to": "      .filter(() => true)"
   }
 ]

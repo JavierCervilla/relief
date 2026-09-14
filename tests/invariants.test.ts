@@ -361,14 +361,32 @@ describe("invariante 5 — el contenido sale siempre delimitado", () => {
 describe("list_tasks / get_task — lo que el voluntario ve antes de elegir", () => {
   it("filtra por tipo, organización e idioma", async () => {
     const h = await harness();
-    expect((await h.service.listTasks({ type: "classify", limit: 50 })).tasks.map((t) => t.id)).toEqual([
-      "cochrane-0001",
-      "cochrane-0002",
-    ]);
     expect((await h.service.listTasks({ org: "kiva", limit: 50 })).tasks).toHaveLength(2);
     expect((await h.service.listTasks({ language: "pt-BR", limit: 50 })).tasks.map((t) => t.id)).toEqual([
       "kiva-0002",
     ]);
+    // `classify` ya no es sólo de Cochrane: el triaje de issues es del mismo tipo y de otra vía.
+    expect((await h.service.listTasks({ type: "classify", limit: 50 })).tasks.map((t) => t.id)).toEqual([
+      "cochrane-0001",
+      "cochrane-0002",
+      "oss-triage-0001",
+    ]);
+  });
+
+  it("filtra por VÍA, que es lo que separa triar issues de cribar estudios clínicos", async () => {
+    const h = await harness();
+    const ngo = await h.service.listTasks({ sourceKind: "ngo", limit: 50 });
+    const oss = await h.service.listTasks({ sourceKind: "oss", limit: 50 });
+
+    expect(ngo.tasks.every((t) => t.sourceKind === "ngo")).toBe(true);
+    expect(oss.tasks.every((t) => t.sourceKind === "oss")).toBe(true);
+    expect(ngo.tasks.length + oss.tasks.length).toBe(
+      (await h.service.listTasks({ limit: 50 })).tasks.length,
+    );
+
+    // Y el cruce vía+tipo, que es la consulta real: «quiero clasificar, pero para una ONG».
+    const cribado = await h.service.listTasks({ sourceKind: "ngo", type: "classify", limit: 50 });
+    expect(cribado.tasks.map((t) => t.id)).toEqual(["cochrane-0001", "cochrane-0002"]);
   });
 
   it("el resumen NO lleva el contenido de la tarea", async () => {
@@ -389,6 +407,30 @@ describe("list_tasks / get_task — lo que el voluntario ve antes de elegir", ()
   it("get_task de una tarea inexistente falla con task_not_found", async () => {
     const h = await harness();
     expect(await codeOf(() => h.service.getTask({ taskId: "no-existe" }))).toBe("task_not_found");
+  });
+
+  it("una tarea de OSS trae la frase de divulgación ya redactada; una de ONG no la necesita", async () => {
+    // Los mantenedores piden que se avise de que hay IA detrás. Dársela escrita quita la única excusa
+    // para no ponerla, y por eso la redacta el SERVIDOR y no la skill — una skill se edita.
+    const h = await harness();
+
+    const oss = await h.service.getTask({ taskId: "oss-astro-0001" });
+    expect(oss.task.disclosure).toBeDefined();
+    expect(oss.task.disclosure).toMatch(/IA generativa/);
+    expect(oss.task.disclosure).toMatch(/revisado una persona/);
+
+    // En la vía ONG el consentimiento es la relación con la organización, no un aviso en un PR público.
+    const ngo = await h.service.getTask({ taskId: "kiva-0001" });
+    expect(ngo.task.disclosure).toBeUndefined();
+  });
+
+  it("y la de un parche dice ADEMÁS que la issue estaba pre-aprobada", async () => {
+    const h = await harness();
+    const patch = await h.service.getTask({ taskId: "oss-patch-0001" });
+    expect(patch.task.disclosure).toMatch(/abierta a ayuda de IA/);
+    // Y entrega el nivel 2 y la reproducción, que es lo que el voluntario tiene que ver fallar.
+    expect(patch.task.preApproval?.issueUrl).toMatch(/^https:\/\//);
+    expect(patch.task.reproduction).toBeTruthy();
   });
 
   it("get_task te dice si la tarea es tuya y hasta cuándo", async () => {

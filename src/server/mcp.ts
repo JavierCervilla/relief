@@ -89,7 +89,7 @@ export function createRelevoServer(service: RelevoService): McpServer {
             ? ["No hay tareas disponibles con esos filtros."]
             : result.tasks.map(
                 (task) =>
-                  `· ${task.id} [${task.type}] ${task.org} — ${task.title} (${task.language}, ~${task.estimatedMinutes} min)`,
+                  `· ${task.id} [${task.type}] ${task.org} [${task.sourceKind}] — ${task.title} (${task.language}, ~${task.estimatedMinutes} min)`,
               );
         return ok([...lines, "", quotaLine(result.quota)].join("\n"), result);
       }),
@@ -112,7 +112,7 @@ export function createRelevoServer(service: RelevoService): McpServer {
         const checklist = task.checklist.map((item) => `  - ${item.text}`).join("\n");
         return ok(
           [
-            `${task.id} [${task.type}] ${task.org} — ${task.title}`,
+            `${task.id} [${task.type}] ${task.source.org} (${task.source.kind}) — ${task.title}`,
             `Estado: ${task.status}${result.yourClaim === null ? "" : ` · tuya hasta ${result.yourClaim.expiresAt}`}`,
             "",
             `Instrucciones de la ONG:\n${task.instructions}`,

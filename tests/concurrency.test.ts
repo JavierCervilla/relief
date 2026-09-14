@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
 
 import { LIMITS } from "../src/schema/task.js";
 import { RelevoError } from "../src/server/errors.js";
-import { harness, syntheticTasks } from "./helpers.js";
+import { harness, syntheticPatches, syntheticTasks } from "./helpers.js";
 
 const ALL_TASK_IDS = [
   "kiva-0001",
@@ -140,5 +140,46 @@ describe("envío bajo concurrencia", () => {
 
     expect(granted).toBe(1);
     expect(await h.store.listSubmissions()).toHaveLength(1);
+  });
+});
+
+describe("el tope de parches aguanta también en paralelo", () => {
+  it("dos claim_task de parche a la vez: sólo uno entra", async () => {
+    const h = await harness(syntheticPatches(4));
+    const { granted, codes } = tally(
+      await Promise.allSettled([
+        h.service.claimTask({ taskId: "patch-000" }),
+        h.service.claimTask({ taskId: "patch-001" }),
+      ]),
+    );
+    expect(granted).toBe(LIMITS.maxPatchClaimsPerSession);
+    expect(codes).toEqual(["patch_quota_exceeded"]);
+  });
+
+  it("cuatro a la vez tampoco: el tope no se negocia con el paralelismo", async () => {
+    const h = await harness(syntheticPatches(4));
+    const { granted } = tally(
+      await Promise.allSettled(
+        ["patch-000", "patch-001", "patch-002", "patch-003"].map((taskId) =>
+          h.service.claimTask({ taskId }),
+        ),
+      ),
+    );
+    expect(granted).toBe(LIMITS.maxPatchClaimsPerSession);
+    expect(await h.store.listClaims()).toHaveLength(LIMITS.maxPatchClaimsPerSession);
+  });
+
+  it("liberar el parche NO devuelve el cupo: se cuentan claims, como en todo lo demás", async () => {
+    const h = await harness(syntheticPatches(4));
+    await h.service.claimTask({ taskId: "patch-000" });
+    await h.service.releaseTask({ taskId: "patch-000" });
+    await expect(h.service.claimTask({ taskId: "patch-001" })).rejects.toThrow(/patch_quota|parche/i);
+  });
+
+  it("pero una sesión nueva vuelve a tener su parche", async () => {
+    const h = await harness(syntheticPatches(4));
+    await h.as({ sessionId: "s1" }).claimTask({ taskId: "patch-000" });
+    const otra = await h.as({ sessionId: "s2" }).claimTask({ taskId: "patch-001" });
+    expect(otra.alreadyYours).toBe(false);
   });
 });
