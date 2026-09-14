@@ -24,6 +24,12 @@
  * Así que la decisión atómica es **de quien guarda el estado**. Cada implementación la garantiza con lo
  * que tiene: la de memoria no suspende entre la comprobación y la escritura; la de Postgres lo hará en
  * una transacción. El servicio ya no puede colarse por en medio porque ya no hay medio.
+ *
+ * **Lo que esta promesa NO cubre**: la pasada de caducidad (`RelevoService.#expireStaleClaims`), que
+ * sigue siendo un bucle con `await` en el servicio. Hoy no es alcanzable —con el store en memoria
+ * ninguna llamada cede de verdad—, pero la ventana está en el código y se abre en cuanto el borrado
+ * tenga latencia real. Su sitio está nombrado en el ROADMAP, en la casilla de fase 2 que la mueve al
+ * servidor: el commit que la haga real es el que tiene que meterla aquí dentro.
  */
 
 import type { Claim, Result, Submission, Task, TaskStatus } from "../schema/task.js";

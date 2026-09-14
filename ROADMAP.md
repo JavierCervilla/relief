@@ -34,7 +34,15 @@ sostiene el argumento de "uso ordinario".
 
 - [ ] Autenticación del voluntario (identidad estable para poder contar sus claims)
 - [ ] Postgres + Drizzle: implementación de `TaskStore` contra la DB, con los mismos tests
-- [ ] Expiración de claims como trabajo del servidor, no como efecto de la siguiente lectura
+- [ ] **Expiración de claims como trabajo del servidor, no como efecto de la siguiente lectura.** Ojo:
+      ésta es la única ruta de mutación que NO bajó al store en RELE-1 — la pasada de caducidad tiene
+      cuatro `await` en bucle y un read-modify-write sobre tareas. Hoy no es alcanzable (`seguridad`
+      barrió 936 configuraciones desde la superficie pública sin un solo daño: con el store en memoria
+      ninguna llamada cede de verdad), pero **la ventana existe en el código** y se abre en cuanto el
+      borrado tenga latencia real, que es exactamente lo que trae esta casilla. El daño sería pérdida de
+      trabajo y cuota quemada —un voluntario traduce media hora y recibe `no_claim` al enviar—, no un
+      salto de cuota ni envíos duplicados. La promesa de transacción de `src/store/task-store.ts` cubre
+      los tres `try*` y **no** cubre esta pasada: el commit que la haga real tiene que meterla dentro.
 - [ ] **Ingesta del backlog de la ONG.** Hoy las tareas son fixtures del repo, revisadas y bajo CI. En
       cuanto entren de fuera, tres cosas que hoy son defendibles dejan de serlo a la vez, así que van
       nombradas aquí y no como deuda difusa (las señalaron `seguridad` y el `verificador` en RELE-1):
